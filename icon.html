@@ -1,0 +1,1284 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IconGallery · 图标选型库</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='2' y='2' width='9' height='9' rx='2.5' fill='%236366f1'/%3E%3Crect x='13' y='2' width='9' height='9' rx='2.5' fill='%23a78bfa'/%3E%3Crect x='2' y='13' width='9' height='9' rx='2.5' fill='%23c7d2fe'/%3E%3Crect x='13' y='13' width='9' height='9' rx='2.5' fill='%238b5cf6'/%3E%3C/svg%3E">
+<script>
+/* 主题初始化（默认深色），在渲染前设置避免闪烁 */
+(function(){
+  try{
+    var t = JSON.parse(localStorage.getItem('ig:theme') || 'null');
+    if(t !== 'light') document.documentElement.classList.add('dark');
+  }catch(e){ document.documentElement.classList.add('dark'); }
+})();
+</script>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  darkMode: 'class',
+  theme: { extend: { fontFamily: {
+    sans: ['-apple-system','BlinkMacSystemFont','Segoe UI','PingFang SC','Hiragino Sans GB','Microsoft YaHei','Helvetica Neue','Arial','sans-serif'],
+    mono: ['ui-monospace','SFMono-Regular','Menlo','Consolas','Liberation Mono','monospace']
+  }}}
+};
+</script>
+<style>
+:root{
+  --icon-size:40px; --stroke-w:2; --ms-fill:0; --ms-wght:400;
+  --icon-fg:#27272a;
+  --card-bg:#ffffff; --card-bd:#e4e4e7; --card-bg-h:#fafafa;
+  --label:#71717a; --label-h:#3f3f46;
+  --seg-bg:rgba(228,228,231,.7); --seg-on:#ffffff; --seg-on-fg:#18181b; --seg-shadow:0 1px 2px rgba(0,0,0,.1);
+  --hover-bg:rgba(228,228,231,.4); --glyph-bg:#f4f4f5;
+  --code-bg:#fafafa;
+}
+html.dark{
+  --icon-fg:#d4d4d8;
+  --card-bg:rgba(24,24,27,.45); --card-bd:#27272a; --card-bg-h:rgba(24,24,27,.9);
+  --label:#71717a; --label-h:#a1a1aa;
+  --seg-bg:rgba(39,39,42,.7); --seg-on:#3f3f46; --seg-on-fg:#fafafa; --seg-shadow:none;
+  --hover-bg:rgba(39,39,42,.5); --glyph-bg:rgba(63,63,70,.4);
+  --code-bg:rgba(9,9,11,.55);
+}
+.ig-hide{display:none!important}
+[data-ctl]{display:none}
+[data-ctl].on{display:block}
+
+/* ---------- 图标插槽 ---------- */
+.slot{display:inline-flex;align-items:center;justify-content:center;width:var(--icon-size);height:var(--icon-size);font-size:var(--icon-size);color:var(--icon-color,var(--icon-fg));flex:none;line-height:1}
+.slot .glyph{font-size:inherit;line-height:1}
+.slot svg{width:100%;height:100%;stroke-width:var(--stroke-w,2)}
+.slot .material-symbols-rounded{font-size:inherit;line-height:1;font-variation-settings:'FILL' var(--ms-fill,0),'wght' var(--ms-wght,400),'GRAD' 0,'opsz' 24}
+.lucide-holder{display:inline-flex;width:100%;height:100%}
+.sk{width:56%;height:56%;border-radius:8px;background:currentColor;opacity:.14;animation:pulse 1.1s ease-in-out infinite}
+
+/* ---------- 图标网格 ---------- */
+.ig-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px}
+.card{display:flex;flex-direction:column;align-items:center;gap:10px;padding:14px 6px 10px;border-radius:14px;border:1px solid var(--card-bd);background:var(--card-bg);cursor:pointer;min-width:0;transition:border-color .15s,background-color .15s,transform .15s;animation:cardIn .3s ease both}
+.card:hover{border-color:rgba(99,102,241,.55);background:var(--card-bg-h);transform:translateY(-2px)}
+.card:focus-visible{outline:2px solid #6366f1;outline-offset:2px}
+.cname{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--label);text-align:center;transition:color .15s}
+.card:hover .cname{color:var(--label-h)}
+@keyframes cardIn{from{opacity:0;transform:translateY(4px)}to{opacity:1}}
+@keyframes pulse{50%{opacity:.05}}
+
+/* ---------- 侧栏库列表 ---------- */
+.lib-item{display:flex;align-items:center;gap:10px;width:100%;padding:8px 10px;border-radius:12px;border:1px solid transparent;cursor:pointer;transition:background .15s,border-color .15s;text-align:left}
+.lib-item:hover{background:var(--hover-bg)}
+.lib-glyph{width:34px;height:34px;flex:none;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;background:var(--glyph-bg);color:var(--icon-fg);font-size:16px;overflow:hidden}
+.lib-title{display:flex;align-items:center;font-size:13px;font-weight:500;color:var(--label-h)}
+.lib-sub{display:block;font-size:11px;color:var(--label);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lib-item.active{border-color:rgba(99,102,241,.45);background:rgba(99,102,241,.08)}
+.lib-item.active .lib-title{color:#6366f1}
+html.dark .lib-item.active .lib-title{color:#a5b4fc}
+
+/* ---------- 分段选择器 ---------- */
+.seg{display:flex;gap:4px;padding:4px;border-radius:11px;background:var(--seg-bg)}
+.seg button{flex:1;padding:5px 2px;font-size:12px;border-radius:8px;color:var(--label);cursor:pointer;transition:.15s;white-space:nowrap}
+.seg button:hover{color:var(--label-h)}
+.seg button.active{background:var(--seg-on);color:var(--seg-on-fg);font-weight:500;box-shadow:var(--seg-shadow)}
+.seg-wrap{flex-wrap:wrap}
+.seg-wrap button{flex:1 1 28%}
+
+/* ---------- 开关 / 色块 / 筹码 ---------- */
+.switch{width:38px;height:22px;flex:none;border-radius:999px;background:var(--seg-bg);border:1px solid var(--card-bd);position:relative;cursor:pointer;transition:.2s}
+.switch.on{background:#6366f1;border-color:#6366f1}
+.switch .knob{position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.switch.on .knob{left:18px}
+.sw{width:24px;height:24px;border-radius:8px;border:1px solid rgba(0,0,0,.12);cursor:pointer;position:relative;flex:none;transition:.15s}
+.sw.auto{background:linear-gradient(135deg,#27272a 50%,#e4e4e7 50%)}
+.sw.custom{background:conic-gradient(#f87171,#fbbf24,#34d399,#60a5fa,#a78bfa,#f472b6,#f87171)}
+.sw.active{outline:2px solid #6366f1;outline-offset:2px}
+.chip{flex:none;padding:6px 12px;border-radius:999px;font-size:12px;color:var(--label);border:1px solid var(--card-bd);background:var(--card-bg);cursor:pointer;transition:.15s;white-space:nowrap}
+.chip.active{color:#6366f1;border-color:rgba(99,102,241,.5);background:rgba(99,102,241,.08);font-weight:500}
+
+/* ---------- 弹窗 / 代码行 / 提示 ---------- */
+.code-box{flex:1;min-width:0;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;line-height:1.6;padding:8px 10px;border-radius:8px;border:1px solid var(--card-bd);background:var(--code-bg);color:var(--label-h);outline:none;resize:none}
+.code-box:focus{border-color:rgba(99,102,241,.5)}
+.copy-btn{flex:none;width:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--label);border:1px solid var(--card-bd);background:var(--card-bg);cursor:pointer;transition:.15s}
+.copy-btn:hover{color:#6366f1;border-color:rgba(99,102,241,.5)}
+.size-cell{display:flex;flex-direction:column;align-items:center;gap:6px}
+.size-cell>span{font-size:10px;font-family:ui-monospace,Menlo,monospace;color:var(--label)}
+.spinner{width:26px;height:26px;border-radius:50%;border:3px solid rgba(99,102,241,.18);border-top-color:#6366f1;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.toast{display:flex;align-items:center;gap:8px;padding:8px 16px;border-radius:999px;background:#18181b;color:#fafafa;font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,.25);opacity:0;transform:translateY(10px);transition:opacity .2s,transform .2s;pointer-events:none}
+html.dark .toast{background:#fafafa;color:#18181b}
+.toast.show{opacity:1;transform:none}
+
+/* ---------- 滚动条 ---------- */
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-thumb{background:rgba(120,120,130,.3);border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:rgba(120,120,130,.5)}
+::-webkit-scrollbar-track{background:transparent}
+
+/* ---------- 移动端抽屉侧栏 ---------- */
+@media (max-width:1023px){
+  #sidebar{position:fixed;top:0;left:0;bottom:0;z-index:40;transform:translateX(-100%);transition:transform .22s ease;box-shadow:0 0 40px rgba(0,0,0,.25);background:#fff}
+  html.dark #sidebar{background:#18181b}
+  #sidebar.open{transform:translateX(0)}
+}
+input[type=range]{-webkit-appearance:none;appearance:none;height:4px;border-radius:2px;background:var(--seg-bg)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:14px;height:14px;border-radius:50%;background:#6366f1;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+</style>
+</head>
+<body class="bg-zinc-50 dark:bg-zinc-950 text-zinc-800 dark:text-zinc-200 font-sans antialiased overflow-hidden">
+
+<div class="flex h-screen overflow-hidden">
+
+  <!-- ================= 侧栏 ================= -->
+  <aside id="sidebar" class="w-64 shrink-0 flex flex-col border-r border-zinc-200 dark:border-zinc-800/70 bg-white dark:bg-zinc-900/40">
+    <div class="px-4 pt-5 pb-4 border-b border-zinc-200/70 dark:border-zinc-800/70 flex items-center gap-2.5">
+      <svg viewBox="0 0 24 24" class="w-7 h-7 text-zinc-700 dark:text-zinc-300" aria-hidden="true">
+        <rect x="2" y="2" width="9" height="9" rx="2.5" fill="#6366f1"/>
+        <rect x="13" y="2" width="9" height="9" rx="2.5" fill="#a78bfa"/>
+        <rect x="2" y="13" width="9" height="9" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.6"/>
+        <rect x="13" y="13" width="9" height="9" rx="2.5" fill="#8b5cf6"/>
+      </svg>
+      <div class="min-w-0">
+        <div class="font-semibold text-[15px] leading-tight">IconGallery</div>
+        <div class="text-[11px] text-zinc-400">图标选型工作台</div>
+      </div>
+      <button id="drawer-close" class="lg:hidden ml-auto w-8 h-8 rounded-lg text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-lg leading-none" aria-label="关闭侧栏">×</button>
+    </div>
+
+    <div class="flex-1 overflow-y-auto px-3 py-4">
+      <div class="px-2 pb-2 text-[11px] font-medium text-zinc-400 tracking-widest">图标库</div>
+      <div id="lib-list" class="space-y-1"></div>
+
+      <div class="px-2 pt-6 pb-2 text-[11px] font-medium text-zinc-400 tracking-widest">预览设置</div>
+      <div class="space-y-5 px-1">
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="text-xs text-zinc-500">图标尺寸</span>
+            <span id="size-val" class="text-xs font-mono text-zinc-400">40px</span>
+          </div>
+          <input id="size-slider" type="range" min="16" max="96" step="4" value="40" class="w-full accent-indigo-500 cursor-pointer">
+        </div>
+
+        <div>
+          <div class="text-xs text-zinc-500 mb-2">图标颜色</div>
+          <div id="swatches" class="flex flex-wrap gap-2"></div>
+        </div>
+
+        <div data-ctl="lucide">
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="text-xs text-zinc-500">描边粗细</span>
+            <span id="stroke-val" class="text-xs font-mono text-zinc-400">2</span>
+          </div>
+          <input id="stroke-slider" type="range" min="1" max="3" step="0.1" value="2" class="w-full accent-indigo-500 cursor-pointer">
+        </div>
+
+        <div data-ctl="remix">
+          <div class="text-xs text-zinc-500 mb-1.5">风格</div>
+          <div id="remix-seg" class="seg">
+            <button data-v="line">线条</button><button data-v="fill">填充</button>
+          </div>
+        </div>
+
+        <div data-ctl="phosphor">
+          <div class="text-xs text-zinc-500 mb-1.5">字重风格</div>
+          <div id="ph-seg" class="seg seg-wrap">
+            <button data-v="thin">细</button><button data-v="light">轻</button><button data-v="regular">常规</button>
+            <button data-v="bold">粗</button><button data-v="fill">填充</button><button data-v="duotone">双色</button>
+          </div>
+        </div>
+
+        <div data-ctl="material">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xs text-zinc-500">填充样式</span>
+            <button id="ms-fill" class="switch" role="switch" aria-checked="false"><span class="knob"></span></button>
+          </div>
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="text-xs text-zinc-500">字重</span>
+            <span id="ms-wght-val" class="text-xs font-mono text-zinc-400">400</span>
+          </div>
+          <input id="ms-wght" type="range" min="100" max="700" step="100" value="400" class="w-full accent-indigo-500 cursor-pointer">
+        </div>
+
+        <div data-ctl="fontawesome">
+          <div class="text-xs text-zinc-500 mb-1.5">风格</div>
+          <div id="fa-seg" class="seg">
+            <button data-v="solid">实心</button><button data-v="regular">常规</button><button data-v="brands">品牌</button>
+          </div>
+        </div>
+
+        <div data-ctl="heroicons">
+          <div class="text-xs text-zinc-500 mb-1.5">风格</div>
+          <div id="hi-seg" class="seg">
+            <button data-v="outline">线条</button><button data-v="solid">实心</button><button data-v="mini">迷你</button>
+          </div>
+        </div>
+
+        <div data-ctl="ionicons">
+          <div class="text-xs text-zinc-500 mb-1.5">风格</div>
+          <div id="ion-seg" class="seg">
+            <button data-v="filled">填充</button><button data-v="outline">线条</button><button data-v="sharp">棱角</button>
+          </div>
+        </div>
+
+        <div data-ctl="boxicons">
+          <div class="text-xs text-zinc-500 mb-1.5">风格</div>
+          <div id="bx-seg" class="seg">
+            <button data-v="regular">常规</button><button data-v="solid">实心</button><button data-v="logos">Logo</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="px-4 py-3 border-t border-zinc-200/70 dark:border-zinc-800/70 text-[11px] text-zinc-400 leading-relaxed">
+      数据来自各图标库官方 CDN，仅用于预览选型。
+    </div>
+  </aside>
+
+  <!-- ================= 主区域 ================= -->
+  <main class="flex-1 flex flex-col min-w-0">
+
+    <header class="shrink-0 z-20 flex items-center gap-2 sm:gap-3 px-3 sm:px-5 h-14 border-b border-zinc-200 dark:border-zinc-800/70 bg-zinc-50/90 dark:bg-zinc-950/90 backdrop-blur">
+      <button id="menu-btn" class="lg:hidden w-9 h-9 -ml-1 rounded-xl flex items-center justify-center text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition" aria-label="打开侧栏">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="w-5 h-5"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+
+      <div class="relative flex-1 max-w-xl">
+        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="w-4 h-4"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        </span>
+        <input id="search" type="text" autocomplete="off" spellcheck="false" placeholder="搜索图标，支持中文（如：删除 / 保存 / 天气），按 / 聚焦"          class="w-full h-7 pl-9 pr-11 rounded-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 focus:border-indigo-500/60 focus:ring-4 focus:ring-indigo-500/10 outline-none text-sm placeholder:text-zinc-400 transition">
+        <button id="clear-search" class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-md text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 text-base leading-none" aria-label="清空搜索">×</button>
+        <kbd id="kbd-hint" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-mono text-zinc-400 border border-zinc-200 dark:border-zinc-700 rounded px-1.5 py-0.5 pointer-events-none">/</kbd>
+      </div>
+
+      <div id="count" class="text-xs font-mono text-zinc-400 tabular-nums whitespace-nowrap"></div>
+
+      <button id="theme-btn" class="ml-auto h-7 pl-2 pr-2.5 rounded-full border border-zinc-200 dark:border-zinc-800 flex items-center gap-1 text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-100 hover:border-zinc-300 dark:hover:border-zinc-700 transition" aria-label="切换主题">
+        <span id="icon-sun" class="inline-flex items-center gap-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="w-4 h-4"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg><span class="text-xs font-medium">明亮</span></span>
+        <span id="icon-moon" class="hidden"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg><span class="text-xs font-medium">黑暗</span></span>
+      </button>
+    </header>
+
+    <div id="kw-bar" class="ig-hide shrink-0 flex items-center gap-2 overflow-x-auto px-3 sm:px-5 py-2 border-b border-zinc-200 dark:border-zinc-800/70 bg-indigo-50/60 dark:bg-indigo-950/20">
+      <span class="text-[11px] text-indigo-500/80 dark:text-indigo-300/80 whitespace-nowrap flex items-center gap-1">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="w-3.5 h-3.5"><path d="M4 20h4L20.5 7.5a2.1 2.1 0 0 0-4-4L4 16v4Z"/><path d="m15 5 4 4"/></svg>
+        中文匹配
+      </span>
+      <div id="kw-chips" class="flex gap-1.5"></div>
+    </div>
+
+    <div id="chip-bar" class="lg:hidden shrink-0 flex gap-2 overflow-x-auto px-3 py-2 border-b border-zinc-200 dark:border-zinc-800/70 bg-zinc-50/90 dark:bg-zinc-950/90"></div>
+
+    <div id="content" class="flex-1 overflow-y-auto min-h-0">
+      <div class="px-4 sm:px-6 pt-5 pb-4 flex items-center gap-2">
+        <h1 id="lib-title" class="text-lg font-semibold tracking-tight"></h1>
+        <a id="lib-site" target="_blank" rel="noopener" class="text-zinc-400 hover:text-indigo-500 transition" aria-label="访问官网">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+        </a>
+      </div>
+      <p id="lib-desc" class="px-4 sm:px-6 -mt-3 pb-3 text-xs text-zinc-500"></p>
+
+      <div id="grid" class="ig-grid px-4 sm:px-6"></div>
+
+      <div id="sentinel" class="ig-hide py-8 flex flex-col items-center gap-2 text-xs text-zinc-400">
+        <div class="spinner"></div><span>向下滚动，加载更多</span>
+      </div>
+      <div id="end-note" class="ig-hide py-8 text-center text-xs text-zinc-400"></div>
+
+      <div id="state-panel" class="ig-hide flex flex-col items-center justify-center gap-3 py-24 text-zinc-400">
+        <div id="panel-icon"></div>
+        <p id="panel-msg" class="text-sm"></p>
+        <button id="reload-btn" class="ig-hide px-4 py-2 rounded-xl text-sm font-medium text-white bg-indigo-500 hover:bg-indigo-600 transition">重新加载</button>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- 抽屉遮罩（移动端） -->
+<div id="drawer-mask" class="ig-hide fixed inset-0 z-30 bg-black/60 backdrop-blur-sm"></div>
+
+<!-- ================= 图标详情弹窗 ================= -->
+<div id="modal" style="display:none" class="fixed inset-0 z-50 items-center justify-center p-4">
+  <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" data-close></div>
+  <div class="relative w-full max-w-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-2xl max-h-[88vh] overflow-y-auto p-5 sm:p-6">
+    <button data-close class="absolute top-3.5 right-3.5 w-8 h-8 rounded-lg flex items-center justify-center text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-lg leading-none" aria-label="关闭">×</button>
+    <div class="flex items-center gap-3 mb-5 pr-8">
+      <span id="m-lib" class="text-xs px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-300 font-medium whitespace-nowrap"></span>
+      <h3 id="m-name" class="font-mono font-semibold text-base truncate"></h3>
+    </div>
+    <div id="m-preview" class="h-36 rounded-xl border border-dashed border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/40 flex items-center justify-center mb-4"></div>
+    <div class="flex items-center gap-2 mb-5 justify-center flex-wrap">
+      <span class="text-[11px] text-zinc-400 mr-1">多尺寸</span>
+      <div id="m-sizes" class="flex items-end gap-4 flex-wrap justify-center"></div>
+    </div>
+    <div id="m-rows" class="space-y-3"></div>
+  </div>
+</div>
+
+<!-- 复制成功提示 -->
+<div id="toasts" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] flex flex-col items-center gap-2 pointer-events-none"></div>
+
+<script>
+(function(){
+'use strict';
+
+/* ================= 工具 ================= */
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+async function fetchText(url){
+  const r = await fetch(url);
+  if(!r.ok) throw new Error('HTTP ' + r.status + ' · ' + url);
+  return r.text();
+}
+
+/* ================= 各图标库加载器（解析官方 CDN） ================= */
+
+async function loadLucide(){
+  const meta = await (await fetch('https://data.jsdelivr.com/v1/packages/npm/lucide-static')).json();
+  const ver = (meta.tags && meta.tags.latest) || meta.versions[meta.versions.length - 1];
+  const tree = await (await fetch('https://data.jsdelivr.com/v1/packages/npm/lucide-static@' + ver + '?structure=flat')).json();
+  const names = tree.files
+    .filter(f => f.name.startsWith('/icons/') && f.name.endsWith('.svg'))
+    .map(f => f.name.slice(7, -4))
+    .sort();
+  if(!names.length) throw new Error('empty lucide list');
+  /* 官方 tags（英文关键词）增强中文搜索命中 */
+  let tags = {};
+  try{
+    const t = await (await fetch('https://cdn.jsdelivr.net/npm/lucide-static@' + ver + '/tags.json')).json();
+    Object.keys(t).forEach(k => { if(t[k] && t[k].tags) tags[k] = t[k].tags; });
+  }catch(e){}
+  return { names, tags };
+}
+
+const TI_SKIP = new Set(['xs','sm','md','lg','xl','1x','2x','3x','4x','5x','6x','7x','8x','9x','10x','rotate','rotate-45','rotate-90','rotate-180','rotate-270','rotate-2','flip','flip-horizontal','flip-vertical','flip-both','spin','pulse','pulse-outline','border','fw']);
+async function loadTabler(){
+  const css = await fetchText('https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css');
+  const s = new Set();
+  for(const m of css.matchAll(/\.ti-([a-z0-9-]+)::?before/g)) if(!TI_SKIP.has(m[1])) s.add(m[1]);
+  if(!s.size) throw new Error('parse failed');
+  return { names: [...s].sort() };
+}
+
+async function loadRemix(){
+  const css = await fetchText('https://cdn.jsdelivr.net/npm/remixicon@latest/fonts/remixicon.css');
+  const line = new Set(), fill = new Set();
+  for(const m of css.matchAll(/\.ri-([a-z0-9-]+)-line::?before/g)) line.add(m[1]);
+  for(const m of css.matchAll(/\.ri-([a-z0-9-]+)-fill::?before/g)) fill.add(m[1]);
+  if(!line.size && !fill.size) throw new Error('parse failed');
+  return { sets: { line: [...line].sort(), fill: [...fill].sort() } };
+}
+
+async function loadPhosphor(){
+  const css = await fetchText('https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css');
+  const s = new Set();
+  for(const m of css.matchAll(/\.ph-([a-z0-9-]+)::?before/g)) s.add(m[1]);
+  if(!s.size) throw new Error('parse failed');
+  return { names: [...s].sort() };
+}
+
+async function loadBootstrap(){
+  const css = await fetchText('https://cdn.jsdelivr.net/npm/bootstrap-icons@latest/font/bootstrap-icons.min.css');
+  const s = new Set();
+  for(const m of css.matchAll(/\.bi-([a-z0-9-]+)::?before/g)) s.add(m[1]);
+  if(!s.size) throw new Error('parse failed');
+  return { names: [...s].sort() };
+}
+
+const MS_CP = 'variablefont/MaterialSymbolsRounded%5BFILL%2CGRAD%2Copsz%2Cwght%5D.codepoints';
+async function loadMaterial(){
+  /* 2025 年仓库重构后文件改名，多源依次回退 */
+  const sources = [
+    'https://cdn.jsdelivr.net/gh/google/material-design-icons@master/' + MS_CP,
+    'https://raw.githubusercontent.com/google/material-design-icons/master/' + MS_CP,
+  ];
+  let txt = '', lastErr = null;
+  for(const url of sources){
+    try{ txt = await fetchText(url); if(txt.trim()) break; }catch(e){ lastErr = e; }
+  }
+  if(!txt.trim()) throw lastErr || new Error('all sources failed');
+  const names = txt.split('\n').map(l => l.trim().split(/\s+/)[0]).filter(Boolean).sort();
+  if(!names.length) throw new Error('parse failed');
+  return { names };
+}
+
+/* Font Awesome：官方 metadata（含每个图标支持的 styles） */
+async function loadFontAwesome(){
+  const meta = await (await fetch('https://cdn.jsdelivr.net/gh/FortAwesome/Font-Awesome@6.x/metadata/icons.json')).json();
+  const sets = { solid:[], regular:[], brands:[] };
+  Object.keys(meta).forEach(name => {
+    (meta[name].styles || []).forEach(s => { if(sets[s]) sets[s].push(name); });
+  });
+  Object.values(sets).forEach(a => a.sort());
+  if(!sets.solid.length) throw new Error('parse failed');
+  return { sets };
+}
+
+/* MDI：css 里 ::before 规则即图标（功能类不带 ::before，无需排除） */
+async function loadMDI(){
+  const css = await fetchText('https://cdn.jsdelivr.net/npm/@mdi/font@latest/css/materialdesignicons.min.css');
+  const s = new Set();
+  for(const m of css.matchAll(/\.mdi-([a-z0-9-]+)::?before/g)) s.add(m[1]);
+  if(!s.size) throw new Error('parse failed');
+  return { names: [...s].sort() };
+}
+
+/* Boxicons：bx-/bxs-/bxl- 三套（功能类不带 :before） */
+async function loadBoxicons(){
+  const css = await fetchText('https://cdn.jsdelivr.net/npm/boxicons@latest/css/boxicons.min.css');
+  const sets = { regular:new Set(), solid:new Set(), logos:new Set() };
+  for(const m of css.matchAll(/\.bx-([a-z0-9-]+)::?before/g)) sets.regular.add(m[1]);
+  for(const m of css.matchAll(/\.bxs-([a-z0-9-]+)::?before/g)) sets.solid.add(m[1]);
+  for(const m of css.matchAll(/\.bxl-([a-z0-9-]+)::?before/g)) sets.logos.add(m[1]);
+  const out = {};
+  Object.keys(sets).forEach(k => out[k] = [...sets[k]].sort());
+  if(!out.regular.length && !out.solid.length) throw new Error('parse failed');
+  return { sets: out };
+}
+
+/* jsDelivr npm 工具：解析 latest 版本号 + 拉平文件树 */
+async function jsdelivrLatest(pkg){
+  const meta = await (await fetch('https://data.jsdelivr.com/v1/packages/npm/' + pkg)).json();
+  return (meta.tags && meta.tags.latest) || meta.versions[meta.versions.length - 1];
+}
+async function flatTree(pkg, ver){
+  const t = await (await fetch('https://data.jsdelivr.com/v1/packages/npm/' + pkg + '@' + ver + '?structure=flat')).json();
+  return t.files || [];
+}
+
+/* Heroicons：SVG 文件树（24 线条 / 24 实心 / 20 迷你） */
+let HI_VER = 'latest';
+async function loadHeroicons(){
+  const ver = await jsdelivrLatest('heroicons');
+  const files = await flatTree('heroicons', ver);
+  const sets = { outline:[], solid:[], mini:[] };
+  files.forEach(f => {
+    let m = f.name.match(/^\/24\/outline\/([a-z0-9-]+)\.svg$/); if(m) return sets.outline.push(m[1]);
+    m = f.name.match(/^\/24\/solid\/([a-z0-9-]+)\.svg$/);       if(m) return sets.solid.push(m[1]);
+    m = f.name.match(/^\/20\/solid\/([a-z0-9-]+)\.svg$/);       if(m) return sets.mini.push(m[1]);
+  });
+  Object.values(sets).forEach(a => a.sort());
+  if(!sets.outline.length) throw new Error('empty heroicons');
+  HI_VER = ver;
+  return { sets };
+}
+function heroiconsUrl(name){
+  const dir = state.hi === 'mini' ? '20/solid' : '24/' + state.hi;
+  return 'https://cdn.jsdelivr.net/npm/heroicons@' + HI_VER + '/' + dir + '/' + encodeURIComponent(name) + '.svg';
+}
+
+/* Ionicons：SVG 文件树（填充 / 线条 / 棱角） */
+let ION_VER = 'latest';
+async function loadIonicons(){
+  const ver = await jsdelivrLatest('ionicons');
+  const files = await flatTree('ionicons', ver);
+  const sets = { filled:new Set(), outline:new Set(), sharp:new Set() };
+  files.forEach(f => {
+    const m = f.name.match(/^\/dist\/svg\/([a-z0-9-]+)\.svg$/);
+    if(!m) return;
+    const n = m[1];
+    if(n.endsWith('-outline')) sets.outline.add(n.slice(0, -9));
+    else if(n.endsWith('-sharp')) sets.sharp.add(n.slice(0, -6));
+    else sets.filled.add(n);
+  });
+  const out = {};
+  Object.keys(sets).forEach(k => out[k] = [...sets[k]].sort());
+  if(!out.filled.length) throw new Error('parse failed');
+  ION_VER = ver;
+  return { sets: out };
+}
+function ioniconsUrl(name){
+  const suffix = state.ion === 'filled' ? '' : '-' + state.ion;
+  return 'https://cdn.jsdelivr.net/npm/ionicons@' + ION_VER + '/dist/svg/' + encodeURIComponent(name + suffix) + '.svg';
+}
+
+/* ================= 配置 ================= */
+const PH_BASE = { thin:'ph-thin', light:'ph-light', regular:'ph', bold:'ph-bold', fill:'ph-fill', duotone:'ph-duotone' };
+const PH_CSS = ['regular','thin','light','bold','fill','duotone'].map(w => 'https://unpkg.com/@phosphor-icons/web@2.1.1/src/' + w + '/style.css');
+const GOOGLE_MS_CSS = 'https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200';
+
+const LIBS = [
+  { id:'lucide',    label:'Lucide',           desc:'线性 · 描边可调',   site:'https://lucide.dev',          accent:'#6366f1', css:[], load:loadLucide },
+  { id:'tabler',    label:'Tabler Icons',     desc:'线性 + 填充',       site:'https://tabler.io/icons',      accent:'#0ea5e9', css:['https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css'], load:loadTabler },
+  { id:'remix',     label:'Remix Icon',       desc:'线条 / 填充',       site:'https://remixicon.com',        accent:'#8b5cf6', css:['https://cdn.jsdelivr.net/npm/remixicon@latest/fonts/remixicon.css'], load:loadRemix },
+  { id:'phosphor',  label:'Phosphor',         desc:'六种字重',          site:'https://phosphoricons.com',    accent:'#22c55e', css:PH_CSS, load:loadPhosphor },
+  { id:'bootstrap', label:'Bootstrap Icons',   desc:'经典通用',          site:'https://icons.getbootstrap.com', accent:'#7c3aed', css:['https://cdn.jsdelivr.net/npm/bootstrap-icons@latest/font/bootstrap-icons.min.css'], load:loadBootstrap },
+  { id:'material',  label:'Material Symbols', desc:'可变字体 · 圆角',    site:'https://fonts.google.com/icons', accent:'#f59e0b', css:[GOOGLE_MS_CSS], load:loadMaterial },
+  { id:'fontawesome', label:'Font Awesome',   desc:'免费版 · 三种风格',  site:'https://fontawesome.com/icons', accent:'#339af0', css:['https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@latest/css/all.min.css'], load:loadFontAwesome },
+  { id:'mdi',       label:'MDI',              desc:'7000+ · 社区版填充', site:'https://pictogrammers.com/library/mdi/', accent:'#2196f3', css:['https://cdn.jsdelivr.net/npm/@mdi/font@latest/css/materialdesignicons.min.css'], load:loadMDI },
+  { id:'heroicons', label:'Heroicons',         desc:'Tailwind 官方',     site:'https://heroicons.com',        accent:'#38bdf8', css:[], load:loadHeroicons },
+  { id:'ionicons',  label:'Ionicons',          desc:'Ionic 团队 · 三风格', site:'https://ionic.io/ionicons', accent:'#4f8df7', css:[], load:loadIonicons },
+  { id:'boxicons',  label:'Boxicons',          desc:'常规 / 实心 / Logo', site:'https://boxicons.com',        accent:'#0d9488', css:['https://cdn.jsdelivr.net/npm/boxicons@latest/css/boxicons.min.css'], load:loadBoxicons },
+];
+const LIB_MAP = Object.fromEntries(LIBS.map(l => [l.id, l]));
+
+const FA_BASE = { solid:'fa-solid', regular:'fa-regular', brands:'fa-brands' };
+
+const SAMPLE = {
+  lucide: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
+  tabler: '<i class="ti ti-star"></i>',
+  remix: '<i class="ri ri-star-line"></i>',
+  phosphor: '<i class="ph ph-star"></i>',
+  bootstrap: '<i class="bi bi-star"></i>',
+  material: '<span class="material-symbols-rounded" style="font-size:16px;line-height:1">star</span>',
+  fontawesome: '<i class="fa-solid fa-star"></i>',
+  mdi: '<i class="mdi mdi-star"></i>',
+  heroicons: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.562.562 0 0 0-.586 0L6.982 20.54a.562.562 0 0 1-.84-.61l1.285-5.386a.562.562 0 0 0-.182-.557l-4.204-3.602a.562.562 0 0 1 .321-.988l5.518-.442a.563.563 0 0 0 .475-.345L11.48 3.5Z"/></svg>',
+  ionicons: '<svg viewBox="0 0 512 512" fill="currentColor" class="w-4 h-4"><path d="M394 480a16 16 0 01-9.39-3L256 383.76 127.39 477a16 16 0 01-24.55-18.08L153 310.35 23 221.2a16 16 0 019-29.2h160.38l48.4-148.95a16 16 0 0130.44 0l48.4 149H480a16 16 0 019.05 29.2L359 310.35l50.13 148.53A16 16 0 01394 480z"/></svg>',
+  boxicons: '<i class="bx bx-star"></i>',
+};
+
+const COLORS = ['#ef4444','#f97316','#f59e0b','#22c55e','#14b8a6','#0ea5e9','#6366f1','#8b5cf6','#ec4899','#64748b'];
+
+const I_COPY = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+const I_CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M20 6 9 17l-5-5"/></svg>';
+const I_ALERT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" class="w-10 h-10"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>';
+const I_EMPTY = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" class="w-10 h-10"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/><path d="m8 8 6 6M14 8l-6 6"/></svg>';
+
+/* ================= 状态 ================= */
+let state = { lib:'lucide', query:'', tagFilter:'', size:40, color:'', stroke:2, remix:'line', ph:'regular', msFill:0, msWght:400, fa:'solid', bx:'regular', hi:'outline', ion:'filled' };
+try{
+  const s = JSON.parse(localStorage.getItem('ig:state') || '{}');
+  if(LIB_MAP[s.lib]) state.lib = s.lib;
+  ['size','stroke','remix','ph','msFill','msWght','color','fa','bx','hi','ion'].forEach(k => { if(s[k] !== undefined) state[k] = s[k]; });
+}catch(e){}
+function saveState(){ try{ localStorage.setItem('ig:state', JSON.stringify(state)); }catch(e){} }
+
+/* ================= DOM ================= */
+const grid = $('#grid'), sentinel = $('#sentinel'), endNote = $('#end-note');
+const statePanel = $('#state-panel'), panelIcon = $('#panel-icon'), panelMsg = $('#panel-msg'), reloadBtn = $('#reload-btn');
+const searchEl = $('#search'), clearBtn = $('#clear-search'), kbdHint = $('#kbd-hint'), countEl = $('#count');
+const contentEl = $('#content'), libList = $('#lib-list'), chipBar = $('#chip-bar');
+const headTitle = $('#lib-title'), headDesc = $('#lib-desc'), headLink = $('#lib-site');
+const modal = $('#modal'), mName = $('#m-name'), mLib = $('#m-lib'), mPreview = $('#m-preview'), mSizes = $('#m-sizes'), mRows = $('#m-rows');
+const toasts = $('#toasts');
+const sidebar = $('#sidebar'), drawerMask = $('#drawer-mask');
+
+/* ================= SVG 缓存与内联（Lucide / Heroicons / Ionicons） ================= */
+const svgCache = new Map();
+function lucideUrl(name){
+  return 'https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/' + encodeURIComponent(name) + '.svg';
+}
+async function getSvg(url, injectFill){
+  const key = url + (injectFill ? '#f' : '');
+  if(svgCache.has(key)) return svgCache.get(key);
+  let t = (await fetchText(url)).replace(/<\?xml[^>]*>/, '').trim();
+  /* ionicons 的 svg 默认无颜色，需补 currentColor 才能跟随主题 */
+  if(injectFill) t = t.replace('<svg ', '<svg fill="currentColor" ');
+  svgCache.set(key, t);
+  return t;
+}
+function fillSlots(root){
+  root.querySelectorAll('[data-svgurl]:not([data-loaded])').forEach(async h => {
+    h.dataset.loaded = '1';
+    try{ h.innerHTML = await getSvg(h.dataset.svgurl, h.dataset.svgfill === '1'); }catch(e){}
+  });
+}
+
+/* ================= 库数据加载 ================= */
+const store = {};
+const injectedCss = new Set();
+function injectCss(id){
+  LIB_MAP[id].css.forEach(href => {
+    if(injectedCss.has(href)) return;
+    injectedCss.add(href);
+    const l = document.createElement('link');
+    l.rel = 'stylesheet';
+    l.href = href;
+    document.head.appendChild(l);
+  });
+}
+async function ensureLib(id){
+  let st = store[id];
+  if(st && st.status === 'ok'){ if(state.lib === id) renderGrid(); return; }
+  if(st && st.status === 'loading') return;
+  injectCss(id);
+  store[id] = { status: 'loading' };
+  updateLibUI();
+  if(state.lib === id) renderGrid();
+  try{
+    const data = await LIB_MAP[id].load();
+    store[id] = Object.assign({ status: 'ok' }, data);
+  }catch(err){
+    store[id] = { status: 'error', error: err };
+  }
+  updateLibUI();
+  if(state.lib === id) renderGrid();
+}
+function updateLibUI(){
+  LIBS.forEach(lib => {
+    const st = store[lib.id];
+    const sub = document.querySelector('[data-sub="' + lib.id + '"]');
+    const gl = document.querySelector('[data-glyph="' + lib.id + '"]');
+    if(sub){
+      if(st && st.status === 'ok'){
+        const n = st.names ? st.names.length : new Set(Object.values(st.sets).flat()).size;
+        sub.textContent = n.toLocaleString() + ' 个图标';
+      }else if(st && st.status === 'error'){
+        sub.textContent = '加载失败 · 点击重试';
+      }
+    }
+    if(gl && st && st.status === 'ok' && !gl.dataset.filled){
+      gl.innerHTML = SAMPLE[lib.id];
+      gl.dataset.filled = '1';
+    }
+  });
+}
+
+/* ================= 中文语义词典（中文词 → 英文关键词） ================= */
+const ZH_MAP = {
+  /* 导航与页面 */
+  '首页':['home','house','landing'],'主页':['home','house'],'返回':['back','arrow-left','return','undo'],
+  '前进':['forward','arrow-right'],'刷新':['refresh','reload','rotate'],'菜单':['menu','list','nav','sidebar'],
+  '导航':['nav','navigation','compass','route'],'侧栏':['sidebar','panel','column'],'布局':['layout','grid','columns'],
+  '置顶':['pin','top','up'],'置底':['bottom'],'标签页':['tab'],'面包屑':['breadcrumb'],'锚点':['anchor','hash'],
+  /* 动作操作 */
+  '添加':['add','plus','new','create'],'新增':['add','plus','create'],'新建':['new','create','file-plus'],
+  '删除':['delete','trash','remove','x','close','bin'],'移除':['remove','close','x','minus'],
+  '编辑':['edit','pencil','pen','write'],'修改':['edit','pencil','modify'],'保存':['save','download','floppy'],
+  '取消':['cancel','x','close','ban'],'确认':['check','confirm','done','yes'],'提交':['submit','send','upload'],
+  '关闭':['close','x','exit'],'打开':['open','external','expand'],'复制':['copy','clone','duplicate'],
+  '剪切':['cut','scissors','crop'],'粘贴':['paste','clipboard'],'撤销':['undo','rotate-ccw','arrow-counterclockwise'],
+  '重做':['redo','rotate-cw','arrow-clockwise'],'搜索':['search','find','magnifier','zoom'],
+  '查找':['search','find','locate'],'筛选':['filter','funnel','sieve'],'排序':['sort','order','arrange','arrow-up-down'],
+  '上传':['upload','cloud-upload','arrow-up'],'下载':['download','cloud-download','arrow-down'],
+  '分享':['share','send','network','social'],'导出':['export','download','share'],'导入':['import','upload'],
+  '打印':['printer','print'],'登录':['log-in','login','sign-in','door-open'],'登出':['logout','log-out','sign-out','door-open'],
+  '注册':['user-plus','sign-up','register'],'验证':['check','verify','shield','badge'],'扫码':['scan','qr','barcode'],
+  '点击':['pointer','cursor','tap','hand'],'拖拽':['drag','grip','move'],'缩放':['zoom','maximize','minimize','expand'],
+  '预览':['eye','preview','visible'],'安装':['download','package','wrench'],'发送':['send','paper-plane','mail'],
+  '转发':['forward','share','send'],'回复':['reply','message','undo'],'点赞':['thumbs-up','like','heart','hand'],
+  '评论':['message','comment','chat','bubble'],'收藏':['star','bookmark','heart','favorite'],
+  '关注':['user-plus','bell','eye'],'购买':['shopping-cart','cart','buy','credit-card'],
+  '折叠':['chevron-down','fold','collapse','minimize'],'展开':['chevron-up','unfold','expand','maximize'],
+  /* 文件与对象 */
+  '文件':['file','document','doc','folder'],'文件夹':['folder','directory','archive'],
+  '图片':['image','photo','picture','img'],'照片':['photo','camera','image'],'相册':['image','photos','album','gallery'],
+  '视频':['video','film','play','camera'],'音频':['audio','music','sound','volume'],'音乐':['music','note','headphones','song'],
+  '文档':['file-text','document','book'],'表格':['table','grid','sheet'],'图表':['chart','bar-chart','graph','pie'],
+  '链接':['link','chain','url','external'],'书签':['bookmark','tag','ribbon'],'标签':['tag','label','price','bookmark'],
+  '附件':['paperclip','attachment','clip'],'回收站':['trash','bin','recycle','delete'],
+  '归档':['archive','box','package'],'草稿':['file-text','edit','pencil','note'],
+  '笔记':['note','pencil','edit','sticky'],'代码':['code','terminal','brackets','developer'],
+  '日历':['calendar','date','schedule'],'时钟':['clock','time','watch','timer'],
+  '钱包':['wallet','credit-card','money','cash'],'信封':['mail','envelope','send'],
+  '礼物':['gift','present','box','birthday'],'钥匙':['key','lock','password','unlock'],
+  '购物车':['shopping-cart','cart','trolley'],'订单':['receipt','list','clipboard','order'],
+  /* 人物角色 */
+  '用户':['user','person','account','profile'],'人群':['users','group','people','team'],
+  '头像':['user','circle-user','person','avatar'],'角色':['user','users','shield','crown'],
+  '团队':['users','team','group'],'成员':['user','users','people','member'],
+  '管理员':['shield','user-cog','crown','admin'],'联系人':['contact','user','phone','address-book'],
+  '作者':['pen-tool','user','edit','write'],'访客':['user','eye','ghost','external'],
+  /* 通信交流 */
+  '消息':['message','chat','bubble','mail'],'通知':['bell','notification','alarm'],
+  '提醒':['bell','alarm','clock','notification'],'邮件':['mail','envelope','inbox','at-sign'],
+  '电话':['phone','call','telephone','contact'],'聊天':['message','chat','bubble','send'],
+  '公告':['megaphone','speaker','volume','announcement'],'反馈':['message','thumbs-up','bug','feedback'],
+  /* 状态 */
+  '成功':['check','circle-check','done','success'],'失败':['x','circle-x','error','alert'],
+  '警告':['alert','triangle','warning','exclamation'],'错误':['x-circle','alert-octagon','error','bug'],
+  '加载':['loader','spinner','loading','hourglass'],'等待':['hourglass','clock','loader','wait'],
+  '进行中':['loader','progress','spinner','circle'],'完成':['check','check-done','circle-check','flag'],
+  '在线':['wifi','signal','globe','dot'],'离线':['wifi-off','plug','zap-off','cloud-off'],
+  '启用':['power','toggle-right','check','play'],'禁用':['ban','toggle-left','x','forbidden'],
+  '锁定':['lock','lock-closed','shield','key'],'解锁':['unlock','lock-open','key','shield-off'],
+  '隐私':['eye-off','shield','lock','user'],'安全':['shield','lock','security','verified'],
+  '密码':['key','lock','asterisk','password'],'帮助':['help','circle-help','question','life-buoy'],
+  '信息':['info','circle-i','information','about'],'危险':['alert','skull','flame','warning'],
+  /* 媒体控制 */
+  '播放':['play','start','triangle','media'],'暂停':['pause','two-bars','stop','hold'],
+  '停止':['square','stop','circle-stop','power'],'快进':['fast-forward','skip-forward','forward'],
+  '后退':['rewind','skip-back','backward','play-back'],'上一首':['skip-back','chevron-left','previous'],
+  '下一首':['skip-forward','chevron-right','next'],'循环':['repeat','loop','refresh-cw','rotate'],
+  '音量':['volume','speaker','sound','audio-volume'],'静音':['volume-x','mute','speaker-off','volume-off'],
+  '全屏':['maximize','expand','fullscreen','corners'],'录制':['circle','record','video','dot'],
+  '截图':['camera','image','crop','scissors'],'直播':['radio','video','broadcast','live'],
+  /* 天气自然 */
+  '天气':['cloud-sun','sun','cloud','weather'],'晴':['sun','clear','day','bright'],
+  '晴天':['sun','clear','day','bright'],'多云':['cloud','cloudy','partly'],'阴天':['cloud','overcast','gloomy'],
+  '雨天':['cloud-rain','rain','umbrella','drizzle'],'雪':['snowflake','snow','cloud-snow','winter'],
+  '风':['wind','air','feather','waves'],'雾':['cloud-fog','fog','mist','haze'],
+  '雷':['zap','cloud-lightning','thunder','bolt'],'彩虹':['rainbow','colors','arc','palette'],
+  '温度':['thermometer','temperature','temp','gauge'],'月亮':['moon','night','dark','sleep'],
+  '太阳':['sun','solar','day','bright'],'星星':['star','sparkle','favorite','rate'],
+  '闪电':['zap','bolt','lightning','flash'],'火':['flame','fire','hot','burn'],
+  '水':['droplet','water','waves','glass'],'山':['mountain','hill','peak','landscape'],
+  '树':['tree','leaf','plant','forest'],'花':['flower','blossom','plant','petal'],
+  /* 方向 */
+  '上':['arrow-up','chevron-up','up','top'],'下':['arrow-down','chevron-down','down','bottom'],
+  '左':['arrow-left','chevron-left','left'],'右':['arrow-right','chevron-right','right'],
+  '旋转':['rotate','refresh','spin','turn'],'翻转':['flip','mirror','rotate','swap'],
+  /* 情感 */
+  '喜欢':['heart','thumbs-up','smile','love'],'收藏夹':['star','bookmark','heart','folder-heart'],
+  '哭':['frown','sad','cry','tear'],'笑':['smile','laugh','happy','grin'],
+  '生气':['angry','flame','mad','furious'],'惊讶':['surprised','exclamation','wow','alert'],
+  '心':['heart','love','like','favorite'],'伤心':['frown','heart-crack','sad','blue'],
+  '开心':['smile','happy','laugh','grin'],'评分':['star','rate','review','rank'],
+  /* 设备 */
+  '电脑':['monitor','computer','screen','desktop'],'笔记本':['laptop','notebook','computer','mac'],
+  '手机':['smartphone','phone','mobile','device'],'平板':['tablet','ipad','device','screen'],
+  '键盘':['keyboard','key','command','type'],'鼠标':['mouse','pointer','cursor','click'],
+  '耳机':['headphones','audio','music','earbuds'],'相机':['camera','photo','aperture','image'],
+  '电视':['tv','television','monitor','screen'],'打印机':['printer','print','paper'],
+  '硬盘':['hard-drive','disk','storage','database'],'电源':['power','plug','zap','on'],
+  '网络':['wifi','network','globe','signal'],'蓝牙':['bluetooth','wireless','connection','signal'],
+  '电池':['battery','power','charge','energy'],'服务器':['server','database','cpu','cloud'],
+  '数据库':['database','storage','server','disk'],'云':['cloud','cloud-upload','weather','storage'],
+  /* 场所 */
+  '公司':['building','briefcase','office','business'],'学校':['school','book','graduation','education'],
+  '医院':['hospital','cross','medical','health'],'银行':['bank','building','money','landmark'],
+  '地图':['map','location','pin','navigation'],'定位':['map-pin','locate','crosshair','gps'],
+  '位置':['map-pin','location','place','pin'],'地址':['map-pin','home','location','mail'],
+  '商店':['store','shop','shopping','bag'],'家':['home','house','family','heart'],
+  /* 购物 */
+  '支付':['credit-card','payment','wallet','cash'],'优惠券':['ticket','tag','percent','discount'],
+  '折扣':['percent','tag','sale','discount'],'价格':['tag','dollar','money','price'],
+  '商品':['package','box','shopping-bag','product'],'货币':['dollar','coins','cash','currency'],
+  '美元':['dollar','usd','money','cash'],'人民币':['yen','currency','money','cash'],
+  /* 通用概念 */
+  '设置':['settings','cog','gear','sliders'],'配置':['settings','sliders','config','adjust'],
+  '主题':['palette','moon','sun','brush'],'颜色':['palette','droplet','color','paint'],
+  '外观':['palette','eye','brush','theme'],'语言':['globe','languages','translate','message'],
+  '权限':['shield','lock','key','user-check'],'版本':['tag','git','branch','history'],
+  '历史':['history','clock','time','rewind'],'同步':['refresh','cloud','rotate','sync'],
+  '备份':['database','save','archive','cloud'],'监控':['activity','gauge','chart','eye'],
+  '日志':['file-text','list','terminal','scroll'],'分析':['chart','bar-chart','trending','analytics'],
+  '报告':['file-text','clipboard','chart','book'],'测试':['flask','check','bug','beaker'],
+  '部署':['rocket','cloud','upload','server'],'性能':['gauge','zap','activity','speed'],
+  '终端':['terminal','console','command','code'],'接口':['plug','link','api','cable'],
+  '组件':['box','package','layers','puzzle'],'图层':['layers','stack','copy','square'],
+  '游戏':['gamepad','joystick','play','toy'],'奖杯':['trophy','award','medal','win'],
+  '奖牌':['medal','award','badge','star'],'目标':['target','bullseye','crosshair','flag'],
+  '任务':['check','list','clipboard','todo'],'清单':['list','check','clipboard','menu'],
+  '问题':['help','question','circle-help','issue'],'想法':['lightbulb','idea','brain','sparkle'],
+  '灵感':['lightbulb','sparkle','zap','star'],'知识':['book','brain','graduation','library'],
+  '书':['book','library','read','text'],'阅读':['book-open','read','eye','text'],
+  '写作':['pen-tool','edit','pencil','write'],'学习':['graduation','book','school','brain'],
+  '工作':['briefcase','work','office','business'],'会议':['users','presentation','calendar','mic'],
+  '时间':['clock','time','hourglass','watch'],'日期':['calendar','date','day','schedule'],
+  '快进键':['fast-forward'],'生产力':['zap','rocket','check','trending'],
+  '人工智能':['brain','bot','sparkle','cpu'],'机器人':['bot','robot','android','message'],
+  '闪电般':['zap','bolt','flash','fast'],'趋势':['trending','trending-up','chart','growth'],
+  '上升':['trending-up','arrow-up','growth','chart'],'下降':['trending-down','arrow-down','decline','chart'],
+};
+/* 中文词最大匹配分词 + 展开英文关键词 */
+function expandQuery(q){
+  const kws = new Set();
+  let i = 0;
+  while(i < q.length){
+    let matched = '';
+    /* 贪心：优先长词（词典最长 4 字） */
+    for(let len = 4; len >= 1; len--){
+      if(i + len > q.length) continue;
+      const seg = q.slice(i, i + len);
+      if(ZH_MAP[seg]){ matched = seg; break; }
+    }
+    if(matched){
+      ZH_MAP[matched].forEach(k => kws.add(k));
+      i += matched.length;
+    }else{
+      i++;
+    }
+  }
+  return [...kws];
+}
+const isCJK = q => /[\u4e00-\u9fff]/.test(q);
+function activeNames(){
+  const st = store[state.lib];
+  if(!st || st.status !== 'ok') return [];
+  if(state.lib === 'remix') return st.sets[state.remix] || [];
+  if(state.lib === 'fontawesome') return st.sets[state.fa] || [];
+  if(state.lib === 'boxicons') return st.sets[state.bx] || [];
+  if(state.lib === 'heroicons') return st.sets[state.hi] || [];
+  if(state.lib === 'ionicons') return st.sets[state.ion] || [];
+  return st.names;
+}
+function filtered(){
+  const q = state.query.trim().toLowerCase();
+  const list = activeNames();
+  if(!q) return list;
+  const tags = (store[state.lib] && store[state.lib].tags) || {};
+  /* 中文查询：词典展开英文关键词，同时匹配图标名与官方 tags */
+  if(isCJK(q)){
+    const kws = expandQuery(q);
+    if(!kws.length) return [];
+    const tagList = state.tagFilter ? [state.tagFilter] : kws;
+    return list.filter(n => {
+      if(tagList.some(k => n.includes(k))) return true;
+      const t = tags[n];
+      return t && t.length && tagList.some(k => t.some(x => x.includes(k)));
+    });
+  }
+  /* 英文查询：原有逻辑 + tags 兜底 */
+  if(state.tagFilter) return list.filter(n => n.includes(state.tagFilter));
+  return list.filter(n => n.includes(q) || (tags[n] && tags[n].some(x => x.includes(q))));
+}
+
+/* ================= 渲染管线 ================= */
+let gen = 0, rendered = 0;
+function glyphHTML(lib, name){
+  switch(lib){
+    case 'lucide':      return '<span class="lucide-holder" data-svgurl="' + lucideUrl(name) + '"><span class="sk"></span></span>';
+    case 'tabler':      return '<i class="glyph ti ti-' + name + '"></i>';
+    case 'remix':       return '<i class="glyph ri ri-' + name + '-' + state.remix + '"></i>';
+    case 'bootstrap':   return '<i class="glyph bi bi-' + name + '"></i>';
+    case 'phosphor':    return '<i class="glyph ' + PH_BASE[state.ph] + ' ph-' + name + '"></i>';
+    case 'material':    return '<span class="glyph material-symbols-rounded">' + name + '</span>';
+    case 'fontawesome': return '<i class="glyph ' + FA_BASE[state.fa] + ' fa-' + name + '"></i>';
+    case 'mdi':         return '<i class="glyph mdi mdi-' + name + '"></i>';
+    case 'boxicons': {
+      const p = { regular:'bx', solid:'bxs', logos:'bxl' }[state.bx];
+      return '<i class="glyph ' + p + ' ' + p + '-' + name + '"></i>';
+    }
+    case 'heroicons':   return '<span class="lucide-holder" data-svgurl="' + heroiconsUrl(name) + '"><span class="sk"></span></span>';
+    case 'ionicons':    return '<span class="lucide-holder" data-svgurl="' + ioniconsUrl(name) + '" data-svgfill="1"><span class="sk"></span></span>';
+  }
+  return '';
+}
+function slotHTML(lib, name, size){
+  const st = size ? ' style="width:' + size + 'px;height:' + size + 'px;font-size:' + size + 'px"' : '';
+  return '<span class="slot"' + st + '>' + glyphHTML(lib, name) + '</span>';
+}
+function cardHTML(name){
+  return '<button class="card" data-name="' + name + '" title="' + name + '">' + slotHTML(state.lib, name, null) + '<span class="cname">' + name + '</span></button>';
+}
+function renderGrid(){
+  gen++; rendered = 0;
+  updateHead(); updateCountUI();
+  const st = store[state.lib];
+  if(!st || st.status === 'loading'){ showPanel('loading'); return; }
+  if(st.status === 'error'){ showPanel('error'); return; }
+  if(!filtered().length){ showPanel('empty'); return; }
+  hidePanel();
+  grid.innerHTML = '';
+  appendChunk();
+  requestAnimationFrame(pump);
+}
+function appendChunk(){
+  const list = filtered();
+  if(rendered >= list.length){ updateEnd(); return; }
+  const CHUNK = (state.lib === 'lucide' || state.lib === 'heroicons' || state.lib === 'ionicons') ? 120 : 240;
+  const slice = list.slice(rendered, rendered + CHUNK);
+  grid.insertAdjacentHTML('beforeend', slice.map(n => cardHTML(n)).join(''));
+  rendered += slice.length;
+  if(state.lib === 'lucide' || state.lib === 'heroicons' || state.lib === 'ionicons') fillSlots(grid);
+  updateCountUI(); updateEnd();
+}
+function updateEnd(){
+  const total = filtered().length;
+  if(rendered >= total){
+    sentinel.classList.add('ig-hide');
+    endNote.classList.remove('ig-hide');
+    endNote.textContent = '已全部加载 · 共 ' + total.toLocaleString() + ' 个图标';
+  }else{
+    sentinel.classList.remove('ig-hide');
+    endNote.classList.add('ig-hide');
+  }
+}
+function updateCountUI(){
+  const list = filtered(), total = activeNames().length, q = state.query.trim();
+  countEl.textContent = q ? list.length.toLocaleString() + ' / ' + total.toLocaleString() : total.toLocaleString();
+}
+function updateHead(){
+  const lib = LIB_MAP[state.lib], st = store[state.lib];
+  headTitle.innerHTML = '<span class="inline-block w-2 h-2 rounded-full mr-1.5 align-middle" style="background:' + lib.accent + '"></span>' + lib.label;
+  headLink.href = lib.site;
+  const prefix = (st && st.status === 'ok') ? activeNames().length.toLocaleString() + ' 个图标 · ' : '';
+  headDesc.textContent = prefix + lib.desc + ' · 点击图标可查看代码并复制';
+}
+function showPanel(kind){
+  grid.classList.add('ig-hide');
+  sentinel.classList.add('ig-hide');
+  endNote.classList.add('ig-hide');
+  statePanel.classList.remove('ig-hide');
+  const lib = LIB_MAP[state.lib];
+  if(kind === 'loading'){
+    panelIcon.innerHTML = '<div class="spinner"></div>';
+    panelMsg.textContent = '正在加载 ' + lib.label + ' 图标库…';
+    reloadBtn.classList.add('ig-hide');
+  }else if(kind === 'error'){
+    panelIcon.innerHTML = I_ALERT;
+    panelMsg.textContent = lib.label + ' 图标库加载失败（网络或 CDN 异常）';
+    reloadBtn.classList.remove('ig-hide');
+  }else{
+    panelIcon.innerHTML = I_EMPTY;
+    panelMsg.textContent = state.query.trim() ? '没有找到与「' + state.query.trim() + '」匹配的图标' : '当前图标库为空';
+    reloadBtn.classList.add('ig-hide');
+  }
+}
+function hidePanel(){
+  statePanel.classList.add('ig-hide');
+  grid.classList.remove('ig-hide');
+}
+/* 懒加载泵：sentinel 进入预加载区就追加，若追加后仍在视口内则继续（IO 不会重复触发） */
+let pumping = false;
+function pump(){
+  if(pumping) return;
+  const st = store[state.lib];
+  if(!st || st.status !== 'ok') return;
+  if(rendered >= filtered().length){ updateEnd(); return; }
+  const cr = sentinel.getBoundingClientRect();
+  const vr = contentEl.getBoundingClientRect();
+  if(cr.top > vr.bottom + 700) return;
+  pumping = true;
+  const g = gen;
+  appendChunk();
+  requestAnimationFrame(() => {
+    pumping = false;
+    /* 本轮未完成且没有切换/重渲染时继续补齐视口 */
+    if(g === gen && rendered < filtered().length) pump();
+  });
+}
+const io = new IntersectionObserver(es => {
+  if(es.some(e => e.isIntersecting)) pump();
+}, { root: contentEl, rootMargin: '700px 0px' });
+io.observe(sentinel);
+
+/* ================= 复制与提示 ================= */
+function toast(msg){
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.innerHTML = I_CHECK + '<span></span>';
+  t.lastChild.textContent = msg;
+  toasts.appendChild(t);
+  requestAnimationFrame(() => t.classList.add('show'));
+  setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 220); }, 1800);
+}
+function fallbackCopy(text){
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.cssText = 'position:fixed;opacity:0';
+  document.body.appendChild(ta);
+  ta.select();
+  try{ document.execCommand('copy'); }catch(e){}
+  ta.remove();
+}
+function copyText(text){
+  const done = () => toast('已经复制到粘贴板');
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(done, () => { fallbackCopy(text); done(); });
+  }else{
+    fallbackCopy(text);
+    done();
+  }
+}
+
+/* ================= 详情弹窗 ================= */
+function pascal(n){ return n.split('-').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(''); }
+function codeRow(label, value){
+  const wrap = document.createElement('div');
+  const multiline = value.indexOf('\n') >= 0;
+  wrap.innerHTML =
+    '<div class="text-xs text-zinc-500 mb-1.5">' + label + '</div>' +
+    '<div class="flex gap-2">' +
+      (multiline ? '<textarea readonly rows="7" class="code-box"></textarea>' : '<input readonly class="code-box">') +
+      '<button class="copy-btn" title="复制">' + I_COPY + '</button>' +
+    '</div>';
+  const field = wrap.querySelector('input,textarea');
+  field.value = value;
+  field.addEventListener('focus', e => e.target.select());
+  wrap.querySelector('.copy-btn').addEventListener('click', () => copyText(field.value));
+  return wrap;
+}
+async function openDetail(name){
+  const lib = state.lib, conf = LIB_MAP[lib];
+  mName.textContent = name;
+  mLib.textContent = conf.label;
+  mPreview.innerHTML = slotHTML(lib, name, 88);
+  mSizes.innerHTML = [16, 24, 32, 48, 64].map(s =>
+    '<div class="size-cell">' + slotHTML(lib, name, s) + '<span>' + s + '</span></div>'
+  ).join('');
+  const rows = [];
+  if(lib === 'lucide'){
+    let svg = '';
+    try{ svg = await getSvg(lucideUrl(name)); }catch(e){}
+    rows.push(['名称', name]);
+    rows.push(['组件名', pascal(name)]);
+    rows.push(['HTML 用法', '<i data-lucide="' + name + '"></i>']);
+    rows.push(['CDN 引入', '<script src="https://unpkg.com/lucide@latest"><\/script>']);
+    if(svg) rows.push(['SVG 代码', svg]);
+  }else if(lib === 'tabler'){
+    rows.push(['名称', name]);
+    rows.push(['CSS 类名', 'ti ti-' + name]);
+    rows.push(['HTML 用法', '<i class="ti ti-' + name + '"></i>']);
+    rows.push(['CDN 引入', '<link rel="stylesheet" href="' + conf.css[0] + '">']);
+  }else if(lib === 'remix'){
+    rows.push(['名称', name]);
+    rows.push(['CSS 类名', 'ri ri-' + name + '-' + state.remix]);
+    rows.push(['HTML 用法', '<i class="ri ri-' + name + '-' + state.remix + '"></i>']);
+    rows.push(['CDN 引入', '<link rel="stylesheet" href="' + conf.css[0] + '">']);
+  }else if(lib === 'phosphor'){
+    rows.push(['名称', name]);
+    rows.push(['CSS 类名', PH_BASE[state.ph] + ' ph-' + name]);
+    rows.push(['HTML 用法', '<i class="' + PH_BASE[state.ph] + ' ph-' + name + '"></i>']);
+    rows.push(['CDN 引入', '<link rel="stylesheet" href="' + PH_CSS[0] + '">']);
+  }else if(lib === 'bootstrap'){
+    rows.push(['名称', name]);
+    rows.push(['CSS 类名', 'bi bi-' + name]);
+    rows.push(['HTML 用法', '<i class="bi bi-' + name + '"></i>']);
+    rows.push(['CDN 引入', '<link rel="stylesheet" href="' + conf.css[0] + '">']);
+  }else if(lib === 'material'){
+    rows.push(['名称', name]);
+    rows.push(['HTML 用法', '<span class="material-symbols-rounded">' + name + '</span>']);
+    rows.push(['CDN 引入', '<link rel="stylesheet" href="' + conf.css[0] + '">']);
+  }else if(lib === 'fontawesome'){
+    rows.push(['名称', name]);
+    rows.push(['CSS 类名', FA_BASE[state.fa] + ' fa-' + name]);
+    rows.push(['HTML 用法', '<i class="' + FA_BASE[state.fa] + ' fa-' + name + '"></i>']);
+    rows.push(['CDN 引入', '<link rel="stylesheet" href="' + conf.css[0] + '">']);
+  }else if(lib === 'mdi'){
+    rows.push(['名称', name]);
+    rows.push(['CSS 类名', 'mdi mdi-' + name]);
+    rows.push(['HTML 用法', '<i class="mdi mdi-' + name + '"></i>']);
+    rows.push(['CDN 引入', '<link rel="stylesheet" href="' + conf.css[0] + '">']);
+  }else if(lib === 'boxicons'){
+    const p = { regular:'bx', solid:'bxs', logos:'bxl' }[state.bx];
+    rows.push(['名称', name]);
+    rows.push(['CSS 类名', p + ' ' + p + '-' + name]);
+    rows.push(['HTML 用法', '<i class="' + p + ' ' + p + '-' + name + '"></i>']);
+    rows.push(['CDN 引入', '<link rel="stylesheet" href="' + conf.css[0] + '">']);
+  }else if(lib === 'heroicons'){
+    let svg = '';
+    try{ svg = await getSvg(heroiconsUrl(name)); }catch(e){}
+    rows.push(['名称', name]);
+    rows.push(['React 组件', "import { " + pascal(name) + "Icon } from '@heroicons/react/" + (state.hi === 'mini' ? '20/solid' : '24/' + state.hi) + "'"]);
+    if(svg) rows.push(['SVG 代码', svg]);
+  }else if(lib === 'ionicons'){
+    let svg = '';
+    try{ svg = await getSvg(ioniconsUrl(name), true); }catch(e){}
+    rows.push(['名称', name]);
+    rows.push(['Web 组件', '<ion-icon name="' + name + '"></ion-icon>']);
+    if(svg) rows.push(['SVG 代码', svg]);
+  }
+  mRows.innerHTML = '';
+  rows.forEach(r => mRows.appendChild(codeRow(r[0], r[1])));
+  fillSlots(modal);
+  modal.style.display = 'flex';
+}
+function closeModal(){ modal.style.display = 'none'; }
+modal.addEventListener('click', e => { if(e.target.closest('[data-close]')) closeModal(); });
+grid.addEventListener('click', e => {
+  const c = e.target.closest('.card');
+  if(c) openDetail(c.dataset.name);
+});
+
+/* ================= 侧栏 / 筹码 / 色板 ================= */
+function buildSidebar(){
+  libList.innerHTML = '';
+  LIBS.forEach(lib => {
+    const b = document.createElement('button');
+    b.className = 'lib-item' + (lib.id === state.lib ? ' active' : '');
+    b.dataset.lib = lib.id;
+    b.innerHTML =
+      '<span class="lib-glyph" data-glyph="' + lib.id + '"><span class="inline-block w-2 h-2 rounded-full bg-current opacity-30"></span></span>' +
+      '<span class="flex-1 min-w-0">' +
+        '<span class="lib-title"><span class="inline-block w-1.5 h-1.5 rounded-full mr-1.5" style="background:' + lib.accent + '"></span>' + lib.label + '</span>' +
+        '<span class="lib-sub" data-sub="' + lib.id + '">' + lib.desc + '</span>' +
+      '</span>';
+    b.addEventListener('click', () => { selectLib(lib.id); closeDrawer(); });
+    libList.appendChild(b);
+  });
+}
+function buildChips(){
+  chipBar.innerHTML = '';
+  LIBS.forEach(lib => {
+    const b = document.createElement('button');
+    b.className = 'chip' + (lib.id === state.lib ? ' active' : '');
+    b.dataset.lib = lib.id;
+    b.textContent = lib.label;
+    b.addEventListener('click', () => selectLib(lib.id));
+    chipBar.appendChild(b);
+  });
+}
+function buildSwatches(){
+  const box = $('#swatches');
+  box.innerHTML = '';
+  const auto = document.createElement('button');
+  auto.className = 'sw auto' + (state.color ? '' : ' active');
+  auto.title = '跟随主题';
+  auto.addEventListener('click', () => { state.color = ''; saveState(); applyVars(); buildSwatches(); });
+  box.appendChild(auto);
+  COLORS.forEach(c => {
+    const b = document.createElement('button');
+    b.className = 'sw';
+    b.style.background = c;
+    b.title = c;
+    if(state.color === c) b.classList.add('active');
+    b.addEventListener('click', () => { state.color = c; saveState(); applyVars(); buildSwatches(); });
+    box.appendChild(b);
+  });
+  const custom = document.createElement('label');
+  custom.className = 'sw custom';
+  if(state.color && COLORS.indexOf(state.color) < 0) custom.classList.add('active');
+  custom.title = '自定义颜色';
+  const inp = document.createElement('input');
+  inp.type = 'color';
+  inp.value = /^#[0-9a-fA-F]{6}$/.test(state.color) ? state.color : '#6366f1';
+  inp.className = 'sr-only';
+  inp.addEventListener('input', () => { state.color = inp.value; saveState(); applyVars(); buildSwatches(); });
+  custom.appendChild(inp);
+  box.appendChild(custom);
+}
+
+/* ================= 预览设置 ================= */
+const sizeSlider = $('#size-slider'), strokeSlider = $('#stroke-slider');
+const msFillBtn = $('#ms-fill'), msWghtSlider = $('#ms-wght');
+function applyVars(){
+  const rs = document.documentElement.style;
+  rs.setProperty('--icon-size', state.size + 'px');
+  if(state.color) rs.setProperty('--icon-color', state.color); else rs.removeProperty('--icon-color');
+  rs.setProperty('--stroke-w', String(state.stroke));
+  rs.setProperty('--ms-fill', String(state.msFill));
+  rs.setProperty('--ms-wght', String(state.msWght));
+  $('#size-val').textContent = state.size + 'px';
+  $('#stroke-val').textContent = String(Math.round(state.stroke * 10) / 10);
+  $('#ms-wght-val').textContent = state.msWght;
+  msFillBtn.classList.toggle('on', !!state.msFill);
+  msFillBtn.setAttribute('aria-checked', String(!!state.msFill));
+}
+sizeSlider.addEventListener('input', () => { state.size = +sizeSlider.value; applyVars(); saveState(); });
+strokeSlider.addEventListener('input', () => { state.stroke = +strokeSlider.value; applyVars(); saveState(); });
+msWghtSlider.addEventListener('input', () => { state.msWght = +msWghtSlider.value; applyVars(); saveState(); });
+msFillBtn.addEventListener('click', () => { state.msFill = state.msFill ? 0 : 1; applyVars(); saveState(); });
+
+function bindSeg(el, key, after){
+  el.addEventListener('click', e => {
+    const b = e.target.closest('button[data-v]');
+    if(!b) return;
+    el.querySelectorAll('button').forEach(x => x.classList.toggle('active', x === b));
+    state[key] = b.dataset.v;
+    saveState();
+    if(after) after();
+  });
+  el.querySelectorAll('button').forEach(x => x.classList.toggle('active', x.dataset.v === String(state[key])));
+}
+bindSeg($('#remix-seg'), 'remix', renderGrid);
+bindSeg($('#ph-seg'), 'ph', renderGrid);
+bindSeg($('#fa-seg'), 'fa', renderGrid);
+bindSeg($('#hi-seg'), 'hi', renderGrid);
+bindSeg($('#ion-seg'), 'ion', renderGrid);
+bindSeg($('#bx-seg'), 'bx', renderGrid);
+
+/* ================= 搜索 / 主题 / 抽屉 / 快捷键 ================= */
+const kwBar = $('#kw-bar'), kwChips = $('#kw-chips');
+function renderKwBar(){
+  const q = state.query.trim();
+  const kws = q && isCJK(q) ? expandQuery(q) : [];
+  if(!kws.length){
+    kwBar.classList.add('ig-hide');
+    state.tagFilter = '';
+    return;
+  }
+  kwBar.classList.remove('ig-hide');
+  kwChips.innerHTML = '';
+  kws.forEach(k => {
+    const b = document.createElement('button');
+    b.className = 'chip' + (state.tagFilter === k ? ' active' : '');
+    b.textContent = k;
+    b.addEventListener('click', () => {
+      state.tagFilter = state.tagFilter === k ? '' : k;
+      renderKwBar();
+      renderGrid();
+    });
+    kwChips.appendChild(b);
+  });
+}
+let searchTimer;
+searchEl.addEventListener('input', () => {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => {
+    state.query = searchEl.value;
+    state.tagFilter = '';
+    clearBtn.classList.toggle('hidden', !searchEl.value);
+    kbdHint.classList.toggle('hidden', !!searchEl.value);
+    renderKwBar();
+    renderGrid();
+  }, 120);
+});
+clearBtn.addEventListener('click', () => {
+  searchEl.value = '';
+  state.query = '';
+  state.tagFilter = '';
+  clearBtn.classList.add('hidden');
+  kbdHint.classList.remove('hidden');
+  renderKwBar();
+  renderGrid();
+  searchEl.focus();
+});
+searchEl.addEventListener('keydown', e => {
+  if(e.key === 'Enter'){
+    const list = filtered();
+    if(list.length) openDetail(list[0]);
+  }
+});
+
+function updateThemeIcon(){
+  const dark = document.documentElement.classList.contains('dark');
+  $('#icon-sun').classList.toggle('hidden', dark);
+  const moon = $('#icon-moon');
+  moon.classList.toggle('hidden', !dark);
+  moon.classList.toggle('inline-flex', dark);
+  moon.classList.toggle('items-center', dark);
+  moon.classList.toggle('gap-1', dark);
+}
+$('#theme-btn').addEventListener('click', () => {
+  const dark = document.documentElement.classList.toggle('dark');
+  try{ localStorage.setItem('ig:theme', dark ? 'dark' : 'light'); }catch(e){}
+  updateThemeIcon();
+});
+
+function closeDrawer(){
+  sidebar.classList.remove('open');
+  drawerMask.classList.add('ig-hide');
+}
+$('#menu-btn').addEventListener('click', () => {
+  sidebar.classList.add('open');
+  drawerMask.classList.remove('ig-hide');
+});
+$('#drawer-close').addEventListener('click', closeDrawer);
+drawerMask.addEventListener('click', closeDrawer);
+
+reloadBtn.addEventListener('click', () => { delete store[state.lib]; ensureLib(state.lib); });
+
+document.addEventListener('keydown', e => {
+  const t = e.target;
+  const typing = t && /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName);
+  /* 输入框 Cmd/Ctrl+A 全选（预览环境兜底） */
+  if((e.metaKey || e.ctrlKey) && (e.key === 'a' || e.key === 'A') && typing){
+    e.preventDefault();
+    t.select();
+    return;
+  }
+  if(e.key === '/' && !typing){
+    e.preventDefault();
+    searchEl.focus();
+    searchEl.select();
+  }else if(e.key === 'Escape' && modal.style.display !== 'none'){
+    closeModal();
+  }
+});
+
+/* ================= 库切换与启动 ================= */
+function selectLib(id){
+  state.lib = id;
+  saveState();
+  $$('.lib-item').forEach(b => b.classList.toggle('active', b.dataset.lib === id));
+  $$('.chip').forEach(b => b.classList.toggle('active', b.dataset.lib === id));
+  $$('[data-ctl]').forEach(el => el.classList.toggle('on', el.dataset.ctl === id));
+  updateHead();
+  ensureLib(id);
+}
+
+sizeSlider.value = state.size;
+strokeSlider.value = state.stroke;
+msWghtSlider.value = state.msWght;
+buildSidebar();
+buildChips();
+buildSwatches();
+applyVars();
+updateThemeIcon();
+selectLib(state.lib);
+
+})();
+</script>
+</body>
+</html>
