@@ -4,15 +4,18 @@
 
 ## 使用方法
 
-**本地运行**（推荐，`file://` 直开部分浏览器会拦截 CDN 数据请求）：
+**在线使用**（GitHub Pages）：
+
+> https://glancers.github.io/IconGallery/
+
+**本地运行**（`file://` 直开部分浏览器会拦截 CDN 数据请求，需走 http）：
 
 ```bash
-cd icon
 python3 -m http.server 8123
-# 打开 http://localhost:8123/IconGallery.html
+# 打开 http://localhost:8123/index.html
 ```
 
-也可以把 `IconGallery.html` 部署到任意静态服务器 / GitHub Pages，无任何构建依赖。
+也可以把 `index.html` 部署到任意静态服务器，无任何构建依赖。
 
 ## 收录图标库
 
