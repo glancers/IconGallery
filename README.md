@@ -17,6 +17,12 @@ python3 -m http.server 8123
 
 也可以把 `index.html` 部署到任意静态服务器，无任何构建依赖。
 
+## 界面预览
+
+| 明亮模式 | 黑暗模式 |
+|---|---|
+| ![light](screenshots/light.png) | ![dark](screenshots/dark.png) |
+
 ## 收录图标库
 
 | 图标库 | 数量 | 特色 |
