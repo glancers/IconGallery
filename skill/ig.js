@@ -3,6 +3,8 @@
 
 const https = require('https');
 const http = require('http');
+const fs = require('fs');
+const path = require('path');
 
 /* ---------- HTTP helpers ---------- */
 function fetchText(url) {
@@ -20,272 +22,35 @@ function fetchJson(url) {
   return fetchText(url).then((t) => JSON.parse(t));
 }
 
-/* ---------- Chinese keyword map (extracted from index.html) ---------- */
-const ZH_MAP = {
-  '首页': ['home', 'house', 'landing'],
-  '主页': ['home', 'house'],
-  '返回': ['back', 'arrow-left', 'return', 'undo'],
-  '前进': ['forward', 'arrow-right'],
-  '刷新': ['refresh', 'reload', 'rotate'],
-  '菜单': ['menu', 'list', 'nav', 'sidebar'],
-  '导航': ['nav', 'navigation', 'compass', 'route'],
-  '侧栏': ['sidebar', 'panel', 'column'],
-  '布局': ['layout', 'grid', 'columns'],
-  '置顶': ['pin', 'top', 'up'],
-  '置底': ['bottom'],
-  '标签页': ['tab'],
-  '面包屑': ['breadcrumb'],
-  '锚点': ['anchor', 'hash'],
-  '添加': ['add', 'plus', 'new', 'create'],
-  '新增': ['add', 'plus', 'create'],
-  '新建': ['new', 'create', 'file-plus'],
-  '删除': ['delete', 'trash', 'remove', 'x', 'close', 'bin'],
-  '移除': ['remove', 'close', 'x', 'minus'],
-  '编辑': ['edit', 'pencil', 'pen', 'write'],
-  '修改': ['edit', 'pencil', 'modify'],
-  '保存': ['save', 'download', 'floppy'],
-  '取消': ['cancel', 'x', 'close', 'ban'],
-  '确认': ['check', 'confirm', 'done', 'yes'],
-  '提交': ['submit', 'send', 'upload'],
-  '关闭': ['close', 'x', 'exit'],
-  '打开': ['open', 'external', 'expand'],
-  '复制': ['copy', 'clone', 'duplicate'],
-  '剪切': ['cut', 'scissors', 'crop'],
-  '粘贴': ['paste', 'clipboard'],
-  '撤销': ['undo', 'rotate-ccw', 'arrow-counterclockwise'],
-  '重做': ['redo', 'rotate-cw', 'arrow-clockwise'],
-  '搜索': ['search', 'find', 'magnifier', 'zoom'],
-  '查找': ['search', 'find', 'locate'],
-  '筛选': ['filter', 'funnel', 'sieve'],
-  '排序': ['sort', 'order', 'arrange', 'arrow-up-down'],
-  '上传': ['upload', 'cloud-upload', 'arrow-up'],
-  '下载': ['download', 'cloud-download', 'arrow-down'],
-  '分享': ['share', 'send', 'network', 'social'],
-  '导出': ['export', 'download', 'share'],
-  '导入': ['import', 'upload'],
-  '打印': ['printer', 'print'],
-  '登录': ['log-in', 'login', 'sign-in', 'door-open'],
-  '登出': ['logout', 'log-out', 'sign-out', 'door-open'],
-  '注册': ['user-plus', 'sign-up', 'register'],
-  '验证': ['check', 'verify', 'shield', 'badge'],
-  '扫码': ['scan', 'qr', 'barcode'],
-  '点击': ['pointer', 'cursor', 'tap', 'hand'],
-  '拖拽': ['drag', 'grip', 'move'],
-  '缩放': ['zoom', 'maximize', 'minimize', 'expand'],
-  '预览': ['eye', 'preview', 'visible'],
-  '安装': ['download', 'package', 'wrench'],
-  '发送': ['send', 'paper-plane', 'mail'],
-  '转发': ['forward', 'share', 'send'],
-  '回复': ['reply', 'message', 'undo'],
-  '点赞': ['thumbs-up', 'like', 'heart', 'hand'],
-  '评论': ['message', 'comment', 'chat', 'bubble'],
-  '收藏': ['star', 'bookmark', 'heart', 'favorite'],
-  '关注': ['user-plus', 'bell', 'eye'],
-  '购买': ['shopping-cart', 'cart', 'buy', 'credit-card'],
-  '折叠': ['chevron-down', 'fold', 'collapse', 'minimize'],
-  '展开': ['chevron-up', 'unfold', 'expand', 'maximize'],
-  '文件': ['file', 'document', 'doc', 'folder'],
-  '文件夹': ['folder', 'directory', 'archive'],
-  '图片': ['image', 'photo', 'picture', 'img'],
-  '照片': ['photo', 'camera', 'image'],
-  '相册': ['image', 'photos', 'album', 'gallery'],
-  '视频': ['video', 'film', 'play', 'camera'],
-  '音频': ['audio', 'music', 'sound', 'volume'],
-  '音乐': ['music', 'note', 'headphones', 'song'],
-  '文档': ['file-text', 'document', 'book'],
-  '表格': ['table', 'grid', 'sheet'],
-  '图表': ['chart', 'bar-chart', 'graph', 'pie'],
-  '链接': ['link', 'chain', 'url', 'external'],
-  '书签': ['bookmark', 'tag', 'ribbon'],
-  '标签': ['tag', 'label', 'price', 'bookmark'],
-  '附件': ['paperclip', 'attachment', 'clip'],
-  '回收站': ['trash', 'bin', 'recycle', 'delete'],
-  '归档': ['archive', 'box', 'package'],
-  '草稿': ['file-text', 'edit', 'pencil', 'note'],
-  '笔记': ['note', 'pencil', 'edit', 'sticky'],
-  '代码': ['code', 'terminal', 'brackets', 'developer'],
-  '日历': ['calendar', 'date', 'schedule'],
-  '时钟': ['clock', 'time', 'watch', 'timer'],
-  '钱包': ['wallet', 'credit-card', 'money', 'cash'],
-  '信封': ['mail', 'envelope', 'send'],
-  '礼物': ['gift', 'present', 'box', 'birthday'],
-  '钥匙': ['key', 'lock', 'password', 'unlock'],
-  '购物车': ['shopping-cart', 'cart', 'trolley'],
-  '订单': ['receipt', 'list', 'clipboard', 'order'],
-  '用户': ['user', 'person', 'account', 'profile'],
-  '人群': ['users', 'group', 'people', 'team'],
-  '头像': ['user', 'circle-user', 'person', 'avatar'],
-  '角色': ['user', 'users', 'shield', 'crown'],
-  '团队': ['users', 'team', 'group'],
-  '成员': ['user', 'users', 'people', 'member'],
-  '管理员': ['shield', 'user-cog', 'crown', 'admin'],
-  '联系人': ['contact', 'user', 'phone', 'address-book'],
-  '作者': ['pen-tool', 'user', 'edit', 'write'],
-  '访客': ['user', 'eye', 'ghost', 'external'],
-  '消息': ['message', 'chat', 'bubble', 'mail'],
-  '通知': ['bell', 'notification', 'alarm'],
-  '提醒': ['bell', 'alarm', 'clock', 'notification'],
-  '邮件': ['mail', 'envelope', 'inbox', 'at-sign'],
-  '电话': ['phone', 'call', 'telephone', 'contact'],
-  '聊天': ['message', 'chat', 'bubble', 'send'],
-  '公告': ['megaphone', 'speaker', 'volume', 'announcement'],
-  '反馈': ['message', 'thumbs-up', 'bug', 'feedback'],
-  '成功': ['check', 'circle-check', 'done', 'success'],
-  '失败': ['x', 'circle-x', 'error', 'alert'],
-  '警告': ['alert', 'triangle', 'warning', 'exclamation'],
-  '错误': ['x-circle', 'alert-octagon', 'error', 'bug'],
-  '加载': ['loader', 'spinner', 'loading', 'hourglass'],
-  '等待': ['hourglass', 'clock', 'loader', 'wait'],
-  '进行中': ['loader', 'progress', 'spinner', 'circle'],
-  '完成': ['check', 'check-done', 'circle-check', 'flag'],
-  '在线': ['wifi', 'signal', 'globe', 'dot'],
-  '离线': ['wifi-off', 'plug', 'zap-off', 'cloud-off'],
-  '启用': ['power', 'toggle-right', 'check', 'play'],
-  '禁用': ['ban', 'toggle-left', 'x', 'forbidden'],
-  '锁定': ['lock', 'lock-closed', 'shield', 'key'],
-  '解锁': ['unlock', 'lock-open', 'key', 'shield-off'],
-  '隐私': ['eye-off', 'shield', 'lock', 'user'],
-  '安全': ['shield', 'lock', 'security', 'verified'],
-  '密码': ['key', 'lock', 'asterisk', 'password'],
-  '帮助': ['help', 'circle-help', 'question', 'life-buoy'],
-  '信息': ['info', 'circle-i', 'information', 'about'],
-  '危险': ['alert', 'skull', 'flame', 'warning'],
-  '播放': ['play', 'start', 'triangle', 'media'],
-  '暂停': ['pause', 'two-bars', 'stop', 'hold'],
-  '停止': ['square', 'stop', 'circle-stop', 'power'],
-  '快进': ['fast-forward', 'skip-forward', 'forward'],
-  '后退': ['rewind', 'skip-back', 'backward', 'play-back'],
-  '上一首': ['skip-back', 'chevron-left', 'previous'],
-  '下一首': ['skip-forward', 'chevron-right', 'next'],
-  '循环': ['repeat', 'loop', 'refresh-cw', 'rotate'],
-  '音量': ['volume', 'speaker', 'sound', 'audio-volume'],
-  '静音': ['volume-x', 'mute', 'speaker-off', 'volume-off'],
-  '全屏': ['maximize', 'expand', 'fullscreen', 'corners'],
-  '录制': ['circle', 'record', 'video', 'dot'],
-  '截图': ['camera', 'image', 'crop', 'scissors'],
-  '直播': ['radio', 'video', 'broadcast', 'live'],
-  '天气': ['cloud-sun', 'sun', 'cloud', 'weather'],
-  '晴': ['sun', 'clear', 'day', 'bright'],
-  '晴天': ['sun', 'clear', 'day', 'bright'],
-  '多云': ['cloud', 'cloudy', 'partly'],
-  '阴天': ['cloud', 'overcast', 'gloomy'],
-  '雨天': ['cloud-rain', 'rain', 'umbrella', 'drizzle'],
-  '雪': ['snowflake', 'snow', 'cloud-snow', 'winter'],
-  '风': ['wind', 'air', 'feather', 'waves'],
-  '雾': ['cloud-fog', 'fog', 'mist', 'haze'],
-  '雷': ['zap', 'cloud-lightning', 'thunder', 'bolt'],
-  '彩虹': ['rainbow', 'colors', 'arc', 'palette'],
-  '温度': ['thermometer', 'temperature', 'temp', 'gauge'],
-  '月亮': ['moon', 'night', 'dark', 'sleep'],
-  '太阳': ['sun', 'solar', 'day', 'bright'],
-  '星星': ['star', 'sparkle', 'favorite', 'rate'],
-  '闪电': ['zap', 'bolt', 'lightning', 'flash'],
-  '火': ['flame', 'fire', 'hot', 'burn'],
-  '水': ['droplet', 'water', 'waves', 'glass'],
-  '山': ['mountain', 'hill', 'peak', 'landscape'],
-  '树': ['tree', 'leaf', 'plant', 'forest'],
-  '花': ['flower', 'blossom', 'plant', 'petal'],
-  '上': ['arrow-up', 'chevron-up', 'up', 'top'],
-  '下': ['arrow-down', 'chevron-down', 'down', 'bottom'],
-  '左': ['arrow-left', 'chevron-left', 'left'],
-  '右': ['arrow-right', 'chevron-right', 'right'],
-  '旋转': ['rotate', 'refresh', 'spin', 'turn'],
-  '翻转': ['flip', 'mirror', 'rotate', 'swap'],
-  '喜欢': ['heart', 'thumbs-up', 'smile', 'love'],
-  '收藏夹': ['star', 'bookmark', 'heart', 'folder-heart'],
-  '哭': ['frown', 'sad', 'cry', 'tear'],
-  '笑': ['smile', 'laugh', 'happy', 'grin'],
-  '生气': ['angry', 'flame', 'mad', 'furious'],
-  '惊讶': ['surprised', 'exclamation', 'wow', 'alert'],
-  '心': ['heart', 'love', 'like', 'favorite'],
-  '伤心': ['frown', 'heart-crack', 'sad', 'blue'],
-  '开心': ['smile', 'happy', 'laugh', 'grin'],
-  '评分': ['star', 'rate', 'review', 'rank'],
-  '电脑': ['monitor', 'computer', 'screen', 'desktop'],
-  '笔记本': ['laptop', 'notebook', 'computer', 'mac'],
-  '手机': ['smartphone', 'phone', 'mobile', 'device'],
-  '平板': ['tablet', 'ipad', 'device', 'screen'],
-  '键盘': ['keyboard', 'key', 'command', 'type'],
-  '鼠标': ['mouse', 'pointer', 'cursor', 'click'],
-  '耳机': ['headphones', 'audio', 'music', 'earbuds'],
-  '相机': ['camera', 'photo', 'aperture', 'image'],
-  '电视': ['tv', 'television', 'monitor', 'screen'],
-  '打印机': ['printer', 'print', 'paper'],
-  '硬盘': ['hard-drive', 'disk', 'storage', 'database'],
-  '电源': ['power', 'plug', 'zap', 'on'],
-  '网络': ['wifi', 'network', 'globe', 'signal'],
-  '蓝牙': ['bluetooth', 'wireless', 'connection', 'signal'],
-  '电池': ['battery', 'power', 'charge', 'energy'],
-  '服务器': ['server', 'database', 'cpu', 'cloud'],
-  '数据库': ['database', 'storage', 'server', 'disk'],
-  '云': ['cloud', 'cloud-upload', 'weather', 'storage'],
-  '公司': ['building', 'briefcase', 'office', 'business'],
-  '学校': ['school', 'book', 'graduation', 'education'],
-  '医院': ['hospital', 'cross', 'medical', 'health'],
-  '银行': ['bank', 'building', 'money', 'landmark'],
-  '地图': ['map', 'location', 'pin', 'navigation'],
-  '定位': ['map-pin', 'locate', 'crosshair', 'gps'],
-  '位置': ['map-pin', 'location', 'place', 'pin'],
-  '地址': ['map-pin', 'home', 'location', 'mail'],
-  '商店': ['store', 'shop', 'shopping', 'bag'],
-  '家': ['home', 'house', 'family', 'heart'],
-  '支付': ['credit-card', 'payment', 'wallet', 'cash'],
-  '优惠券': ['ticket', 'tag', 'percent', 'discount'],
-  '折扣': ['percent', 'tag', 'sale', 'discount'],
-  '价格': ['tag', 'dollar', 'money', 'price'],
-  '商品': ['package', 'box', 'shopping-bag', 'product'],
-  '货币': ['dollar', 'coins', 'cash', 'currency'],
-  '美元': ['dollar', 'usd', 'money', 'cash'],
-  '人民币': ['yen', 'currency', 'money', 'cash'],
-  '设置': ['settings', 'cog', 'gear', 'sliders'],
-  '配置': ['settings', 'sliders', 'config', 'adjust'],
-  '主题': ['palette', 'moon', 'sun', 'brush'],
-  '颜色': ['palette', 'droplet', 'color', 'paint'],
-  '外观': ['palette', 'eye', 'brush', 'theme'],
-  '语言': ['globe', 'languages', 'translate', 'message'],
-  '权限': ['shield', 'lock', 'key', 'user-check'],
-  '版本': ['tag', 'git', 'branch', 'history'],
-  '历史': ['history', 'clock', 'time', 'rewind'],
-  '同步': ['refresh', 'cloud', 'rotate', 'sync'],
-  '备份': ['database', 'save', 'archive', 'cloud'],
-  '监控': ['activity', 'gauge', 'chart', 'eye'],
-  '日志': ['file-text', 'list', 'terminal', 'scroll'],
-  '分析': ['chart', 'bar-chart', 'trending', 'analytics'],
-  '报告': ['file-text', 'clipboard', 'chart', 'book'],
-  '测试': ['flask', 'check', 'bug', 'beaker'],
-  '部署': ['rocket', 'cloud', 'upload', 'server'],
-  '性能': ['gauge', 'zap', 'activity', 'speed'],
-  '终端': ['terminal', 'console', 'command', 'code'],
-  '接口': ['plug', 'link', 'api', 'cable'],
-  '组件': ['box', 'package', 'layers', 'puzzle'],
-  '图层': ['layers', 'stack', 'copy', 'square'],
-  '游戏': ['gamepad', 'joystick', 'play', 'toy'],
-  '奖杯': ['trophy', 'award', 'medal', 'win'],
-  '奖牌': ['medal', 'award', 'badge', 'star'],
-  '目标': ['target', 'bullseye', 'crosshair', 'flag'],
-  '任务': ['check', 'list', 'clipboard', 'todo'],
-  '清单': ['list', 'check', 'clipboard', 'menu'],
-  '问题': ['help', 'question', 'circle-help', 'issue'],
-  '想法': ['lightbulb', 'idea', 'brain', 'sparkle'],
-  '灵感': ['lightbulb', 'sparkle', 'zap', 'star'],
-  '知识': ['book', 'brain', 'graduation', 'library'],
-  '书': ['book', 'library', 'read', 'text'],
-  '阅读': ['book-open', 'read', 'eye', 'text'],
-  '写作': ['pen-tool', 'edit', 'pencil', 'write'],
-  '学习': ['graduation', 'book', 'school', 'brain'],
-  '工作': ['briefcase', 'work', 'office', 'business'],
-  '会议': ['users', 'presentation', 'calendar', 'mic'],
-  '时间': ['clock', 'time', 'hourglass', 'watch'],
-  '日期': ['calendar', 'date', 'day', 'schedule'],
-  '快进键': ['fast-forward'],
-  '生产力': ['zap', 'rocket', 'check', 'trending'],
-  '人工智能': ['brain', 'bot', 'sparkle', 'cpu'],
-  '机器人': ['bot', 'robot', 'android', 'message'],
-  '闪电般': ['zap', 'bolt', 'flash', 'fast'],
-  '趋势': ['trending', 'trending-up', 'chart', 'growth'],
-  '上升': ['trending-up', 'arrow-up', 'growth', 'chart'],
-  '下降': ['trending-down', 'arrow-down', 'decline', 'chart'],
-};
+/* ---------- Chinese keyword map (shared with web UI) ---------- */
+const ZH_MAP = (() => {
+  try {
+    const idx = JSON.parse(fs.readFileSync(path.join(__dirname, "zh-index.json"), "utf8"));
+    const out = {};
+    for (const [k, v] of Object.entries(idx)) {
+      if (!k.startsWith("_")) out[k] = v;
+    }
+    return out;
+  } catch (e) {
+    console.error("Warning: zh-index.json not loaded, Chinese search disabled: " + e.message);
+    return {};
+  }
+})();
+
+/* ---------- Online translation fallback (MyMemory, free, no key) ---------- */
+const ZH_TRANS_CACHE = new Map();
+async function translateZh2En(q) {
+  if (ZH_TRANS_CACHE.has(q)) return ZH_TRANS_CACHE.get(q);
+  let result = '';
+  try {
+    const url = "https://api.mymemory.translated.net/get?q=" + encodeURIComponent(q) + "&langpair=zh|en";
+    const data = JSON.parse(await fetchText(url));
+    const t = data && data.responseData && data.responseData.translatedText;
+    if (t && !/^[A-Zs-]+ERROR/i.test(t)) result = String(t).toLowerCase().trim();
+  } catch (e) { /* network failure: silent fallback to dictionary-only */ }
+  ZH_TRANS_CACHE.set(q, result);
+  return result;
+}
 
 /* ---------- Library loaders ---------- */
 const cache = {};
@@ -611,11 +376,11 @@ function expandQuery(q) {
   return [...kws];
 }
 
-function filterNames(names, tags, query, tagFilter) {
+function filterNames(names, tags, query, tagFilter, kwsOverride) {
   const q = query.trim().toLowerCase();
   if (!q) return names;
   if (isCJK(q)) {
-    const kws = expandQuery(q);
+    const kws = kwsOverride || expandQuery(q);
     if (!kws.length) return [];
     const tagList = tagFilter ? [tagFilter] : kws;
     return names.filter((n) => {
@@ -630,9 +395,36 @@ function filterNames(names, tags, query, tagFilter) {
   );
 }
 
+/* CJK 查询：词典命中 -> 直接用；未命中 -> 在线翻译兜底 */
+async function resolveCJKKeywords(query) {
+  const kws = expandQuery(query);
+  if (kws.length) return { kws, via: 'dictionary' };
+  const en = await translateZh2En(query);
+  if (en) {
+    const tkws = en.split(/[^a-z0-9]+/).filter((w) => w.length > 1);
+    if (tkws.length) return { kws: tkws, via: 'translation' };
+  }
+  return { kws: [], via: 'none' };
+}
+
 async function search(query, { lib: libId, limit = 20, json: asJson } = {}) {
   const libsToSearch = libId ? [libId] : Object.keys(LIBS);
   const results = [];
+
+  let kwOverride = null;
+  let via = 'dictionary';
+  if (isCJK(query)) {
+    const r = await resolveCJKKeywords(query);
+    kwOverride = r.kws;
+    via = r.via;
+    if (!kwOverride.length) {
+      console.log('No icons found. (词典与翻译均未命中该中文词)');
+      return asJson ? [] : undefined;
+    }
+    if (!asJson && via === 'translation') {
+      console.log(`(词典未命中，已通过在线翻译: ${query} -> ${kwOverride.join(' ')})`);
+    }
+  }
 
   for (const id of libsToSearch) {
     try {
@@ -640,7 +432,7 @@ async function search(query, { lib: libId, limit = 20, json: asJson } = {}) {
       const names = data.sets
         ? [...new Set([...(data.sets.line || []), ...(data.sets.fill || []), ...(data.sets.solid || []), ...(data.sets.regular || []), ...(data.sets.brands || [])])].sort()
         : data.names;
-      const matched = filterNames(names, data.tags || {}, query, null);
+      const matched = filterNames(names, data.tags || {}, query, null, kwOverride);
       matched.slice(0, limit).forEach((name) => {
         results.push({ library: id, name });
       });

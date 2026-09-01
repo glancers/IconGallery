@@ -759,7 +759,44 @@ const ZH_MAP = {
   '人工智能':['brain','bot','sparkle','cpu'],'机器人':['bot','robot','android','message'],
   '闪电般':['zap','bolt','flash','fast'],'趋势':['trending','trending-up','chart','growth'],
   '上升':['trending-up','arrow-up','growth','chart'],'下降':['trending-down','arrow-down','decline','chart'],
+  '飞机':['airplane','aircraft','plane','flight'],'航空':['airplane','aircraft','plane'],
+  '直升':['helicopter'],'船':['ship','boat','vessel','anchor'],
+  '汽车':['car','truck','vehicle','automobile'],'自行车':['bike','bicycle','cycle'],
+  '火车':['train','locomotive','rail'],'地铁':['subway','metro','train'],
+  '出租车':['taxi','car','truck'],'驾驶':['car','truck','steering-wheel'],
+  '交通':['car','bus','truck','traffic-light'],'火箭':['rocket','missile','launch'],
+  '无人机':['drone','quadcopter'],'护照':['passport','bookmark'],
+  '行李':['luggage','suitcase','bag'],
 };
+/* 加载共享词典（skill/zh-index.json，920+ 条），与 CLI 共用同一份数据 */
+fetch('skill/zh-index.json').then(r => r.ok ? r.json() : null).then(idx => {
+  if(!idx) return;
+  for(const [k, v] of Object.entries(idx)){
+    if(!k.startsWith('_')) ZH_MAP[k] = v;
+  }
+  renderKwBar();
+  renderGrid();
+}).catch(() => {/* file:// 等场景静默降级为内置词典 */});
+/* 在线翻译兜底（MyMemory，免费无 Key，支持 CORS） */
+const ZH_TRANS = {}, ZH_TRANS_REQ = {};
+function translateZh2En(q){
+  if(q in ZH_TRANS) return Promise.resolve(ZH_TRANS[q]);
+  if(ZH_TRANS_REQ[q]) return ZH_TRANS_REQ[q];
+  ZH_TRANS_REQ[q] = fetch('https://api.mymemory.translated.net/get?q=' + encodeURIComponent(q) + '&langpair=zh|en')
+    .then(r => r.json())
+    .then(d => {
+      const t = (d && d.responseData && d.responseData.translatedText) || '';
+      const en = (t && !/^[A-Z\s-]+ERROR/i.test(t)) ? t.toLowerCase().trim() : '';
+      ZH_TRANS[q] = en;
+      return en;
+    })
+    .catch(() => { ZH_TRANS[q] = ''; return ''; });
+  return ZH_TRANS_REQ[q];
+}
+function translatedKws(q){
+  const en = ZH_TRANS[q] || '';
+  return en ? en.split(/[^a-z0-9]+/).filter(w => w.length > 1) : [];
+}
 /* 中文词最大匹配分词 + 展开英文关键词 */
 function expandQuery(q){
   const kws = new Set();
@@ -797,9 +834,10 @@ function filtered(){
   const list = activeNames();
   if(!q) return list;
   const tags = (store[state.lib] && store[state.lib].tags) || {};
-  /* 中文查询：词典展开英文关键词，同时匹配图标名与官方 tags */
+  /* 中文查询：词典展开英文关键词，未命中则用翻译结果；同时匹配图标名与官方 tags */
   if(isCJK(q)){
-    const kws = expandQuery(q);
+    let kws = expandQuery(q);
+    if(!kws.length) kws = translatedKws(q);
     if(!kws.length) return [];
     const tagList = state.tagFilter ? [state.tagFilter] : kws;
     return list.filter(n => {
@@ -1162,7 +1200,8 @@ bindSeg($('#bx-seg'), 'bx', renderGrid);
 const kwBar = $('#kw-bar'), kwChips = $('#kw-chips');
 function renderKwBar(){
   const q = state.query.trim();
-  const kws = q && isCJK(q) ? expandQuery(q) : [];
+  let kws = q && isCJK(q) ? expandQuery(q) : [];
+  if(!kws.length && q && isCJK(q)) kws = translatedKws(q); /* 翻译兜底词也显示为 chips */
   if(!kws.length){
     kwBar.classList.add('ig-hide');
     state.tagFilter = '';
@@ -1192,6 +1231,16 @@ searchEl.addEventListener('input', () => {
     kbdHint.classList.toggle('hidden', !!searchEl.value);
     renderKwBar();
     renderGrid();
+    /* 词典未命中的中文词 -> 在线翻译兜底，结果回来后自动刷新 */
+    const q = state.query.trim();
+    if(q && isCJK(q) && !expandQuery(q).length && !(q in ZH_TRANS)){
+      translateZh2En(q).then(en => {
+        if(en && state.query.trim() === q){
+          renderKwBar();
+          renderGrid();
+        }
+      });
+    }
   }, 120);
 });
 clearBtn.addEventListener('click', () => {

@@ -43,7 +43,7 @@ python3 -m http.server 8123
 
 ## 功能
 
-- **中文搜索**：内置 260+ 中文语义词典（如搜「删除」「保存」「天气」），自动展开英文关键词匹配；Lucide 额外接官方 tags 增强命中
+- **中文搜索**：内置 920+ 条中文语义词典（`skill/zh-index.json`，与 CLI 共用），如搜「删除」「心电图」「飞机」自动展开英文关键词匹配；词典未命中时自动调用免费翻译 API（MyMemory，免注册）兜底，如「挖掘机」→ excavator；Lucide 额外接官方 tags 增强命中
 - **关键词收窄**：中文搜索后，点关键词 chip 从宽召回切到精确过滤
 - **预览调节**：尺寸 16–96px、10 种颜色 + 自定义取色、描边 / 字重 / 填充样式
 - **点击图标**：大图预览 + 16/24/32/48/64 多尺寸对照，一键复制名称、CSS 类名、HTML 用法、CDN 引入语句、SVG 源码
@@ -87,7 +87,8 @@ icon/
 ├── .trae/skills/icon-gallery/SKILL.md   # Trae Skill 定义
 ├── AGENTS.md                            # 通用 Agent 定义
 ├── skill/
-│   └── ig.js                            # CLI 核心脚本
+│   ├── ig.js                            # CLI 核心脚本
+│   └── zh-index.json                    # 共享中文词典（920+ 条）
 ├── index.html                           # Web 界面
 ├── screenshots/                         # 截图
 └── README.md                            # 本文件
