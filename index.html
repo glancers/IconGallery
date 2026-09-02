@@ -768,12 +768,16 @@ const ZH_MAP = {
   '无人机':['drone','quadcopter'],'护照':['passport','bookmark'],
   '行李':['luggage','suitcase','bag'],
 };
+/* 拼音索引（zh-index.json 的 _pinyin 字段），支持 feiji / fj / shanchu / sc */
+const ZH_PINYIN = {};
 /* 加载共享词典（skill/zh-index.json，920+ 条），与 CLI 共用同一份数据 */
 fetch('skill/zh-index.json').then(r => r.ok ? r.json() : null).then(idx => {
   if(!idx) return;
   for(const [k, v] of Object.entries(idx)){
+    if(k === '_pinyin') continue;
     if(!k.startsWith('_')) ZH_MAP[k] = v;
   }
+  if(idx._pinyin) Object.assign(ZH_PINYIN, idx._pinyin);
   renderKwBar();
   renderGrid();
 }).catch(() => {/* file:// 等场景静默降级为内置词典 */});
@@ -797,25 +801,48 @@ function translatedKws(q){
   const en = ZH_TRANS[q] || '';
   return en ? en.split(/[^a-z0-9]+/).filter(w => w.length > 1) : [];
 }
-/* 中文词最大匹配分词 + 展开英文关键词 */
-function expandQuery(q){
-  const kws = new Set();
+/* 中文词最大匹配分词 + 展开英文关键词分组（每个命中的词条 = 一组同义关键词） */
+function expandGroups(q){
+  const groups = [];
+  const seen = new Set();
   let i = 0;
   while(i < q.length){
     let matched = '';
-    /* 贪心：优先长词（词典最长 4 字） */
-    for(let len = 4; len >= 1; len--){
+    /* 贪心：优先长词（词典最长 5 字） */
+    for(let len = 5; len >= 1; len--){
       if(i + len > q.length) continue;
       const seg = q.slice(i, i + len);
       if(ZH_MAP[seg]){ matched = seg; break; }
     }
     if(matched){
-      ZH_MAP[matched].forEach(k => kws.add(k));
+      if(!seen.has(matched)){ seen.add(matched); groups.push(ZH_MAP[matched]); }
       i += matched.length;
     }else{
       i++;
     }
   }
+  return groups;
+}
+/* 兼容旧调用：拍平 */
+function expandQuery(q){
+  const kws = new Set();
+  expandGroups(q).forEach(g => g.forEach(k => kws.add(k)));
+  return [...kws];
+}
+/* 拼音查询：返回分组（每个拼音词 = 一组） */
+function expandPinyinGroups(q){
+  const parts = q.toLowerCase().split(/\s+/).filter(Boolean);
+  if(!parts.length || !Object.keys(ZH_PINYIN).length) return [];
+  const groups = [], seen = new Set();
+  for(const p of parts){
+    const hit = ZH_PINYIN[p];
+    if(hit && !seen.has(p)){ seen.add(p); groups.push(hit); }
+  }
+  return groups;
+}
+function expandPinyin(q){
+  const kws = new Set();
+  expandPinyinGroups(q).forEach(g => g.forEach(k => kws.add(k)));
   return [...kws];
 }
 const isCJK = q => /[\u4e00-\u9fff]/.test(q);
@@ -829,26 +856,83 @@ function activeNames(){
   if(state.lib === 'ionicons') return st.sets[state.ion] || [];
   return st.names;
 }
+/* 图标名切词元：按 - _ . 空格切，camelCase 也要拆开 */
+function tokenize(n){
+  const parts = n.replace(/([a-z0-9])([A-Z])/g, '$1 $2').split(/[-_.\s]+/).filter(Boolean);
+  return parts;
+}
+/* 单个关键词对单个图标名的得分；0 = 不命中 */
+const TOKEN_CACHE = new Map();
+function scoreName(kw, tokens){
+  if(!kw) return 0;
+  if(tokens.includes(kw)) return 100;              /* 词元精确命中 */
+  const kwToks = kw.split('-').filter(Boolean);
+  /* 复合关键词（如 arrow-left）全部词元命中 */
+  if(kwToks.length > 1 && kwToks.every(t => tokens.includes(t))) return 85;
+  let best = 0;
+  for(const t of tokens){
+    if(t.startsWith(kw)) best = Math.max(best, 70);  /* 词元前缀命中 */
+    else if(kw.length >= 3 && t.includes(kw)) best = Math.max(best, 40); /* 长关键词子串 */
+  }
+  return best;
+}
+function tokensOf(name){
+  if(!TOKEN_CACHE.has(name)) TOKEN_CACHE.set(name, tokenize(name));
+  return TOKEN_CACHE.get(name);
+}
+/* 评分过滤 + 排序（分组语义）：
+   组内关键词 OR（同义词任一命中即得分，取最高）；
+   组间 AND（每个概念组都命中才保留）；多组全命中额外加成 */
+function rankMatch(names, kws, tags){
+  return rankMatchGroups(names, [kws], tags);
+}
+function rankMatchGroups(names, groups, tags){
+  if(!groups.length) return [];
+  const out = [];
+  for(const n of names){
+    const tokens = tokensOf(n);
+    const t = tags[n];
+    let total = 0, groupHits = 0;
+    for(const g of groups){
+      let best = 0;
+      for(const kw of g){
+        let s = scoreName(kw, tokens);
+        if(!s && t && t.some(x => x.includes(kw))) s = 40;
+        if(s > best) best = s;
+      }
+      if(best > 0){ total += best; groupHits++; }
+    }
+    if(groupHits === groups.length){
+      /* 多概念同时命中 = 强相关 */
+      if(groups.length > 1) total += 50 * (groups.length - 1);
+      total -= tokens.length * 0.5; /* 名称更短 = 更通用，微弱优先 */
+      out.push([n, total]);
+    }
+  }
+  out.sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+  return out.map(x => x[0]);
+}
 function filtered(){
   const q = state.query.trim().toLowerCase();
   const list = activeNames();
   if(!q) return list;
   const tags = (store[state.lib] && store[state.lib].tags) || {};
-  /* 中文查询：词典展开英文关键词，未命中则用翻译结果；同时匹配图标名与官方 tags */
-  if(isCJK(q)){
-    let kws = expandQuery(q);
-    if(!kws.length) kws = translatedKws(q);
-    if(!kws.length) return [];
-    const tagList = state.tagFilter ? [state.tagFilter] : kws;
-    return list.filter(n => {
-      if(tagList.some(k => n.includes(k))) return true;
-      const t = tags[n];
-      return t && t.length && tagList.some(k => t.some(x => x.includes(k)));
-    });
+  /* 中文 / 拼音 / 翻译关键词统一走分组评分排序 */
+  const pyGroups = isCJK(q) ? [] : expandPinyinGroups(q);
+  if(isCJK(q) || pyGroups.length){
+    let groups = expandGroups(q);
+    if(!groups.length) groups = pyGroups;             /* 拼音：feiji / fj */
+    if(!groups.length){
+      const tk = translatedKws(q);                   /* 翻译兜底 */
+      if(tk.length) groups = [tk];
+    }
+    if(!groups.length) return [];
+    if(state.tagFilter) return rankMatch(list, [state.tagFilter], tags);
+    return rankMatchGroups(list, groups, tags);
   }
-  /* 英文查询：原有逻辑 + tags 兜底 */
-  if(state.tagFilter) return list.filter(n => n.includes(state.tagFilter));
-  return list.filter(n => n.includes(q) || (tags[n] && tags[n].some(x => x.includes(q))));
+  /* 纯英文查询：同样评分排序（精确 > 前缀 > 子串 > tags） */
+  if(state.tagFilter) return rankMatch(list, [state.tagFilter], tags);
+  return rankMatch(list, [q], tags);
 }
 
 /* ================= 渲染管线 ================= */
@@ -885,9 +969,9 @@ function renderGrid(){
   const st = store[state.lib];
   if(!st || st.status === 'loading'){ showPanel('loading'); return; }
   if(st.status === 'error'){ showPanel('error'); return; }
+  grid.innerHTML = '';
   if(!filtered().length){ showPanel('empty'); return; }
   hidePanel();
-  grid.innerHTML = '';
   appendChunk();
   requestAnimationFrame(pump);
 }
@@ -1200,8 +1284,13 @@ bindSeg($('#bx-seg'), 'bx', renderGrid);
 const kwBar = $('#kw-bar'), kwChips = $('#kw-chips');
 function renderKwBar(){
   const q = state.query.trim();
-  let kws = q && isCJK(q) ? expandQuery(q) : [];
-  if(!kws.length && q && isCJK(q)) kws = translatedKws(q); /* 翻译兜底词也显示为 chips */
+  let kws = [];
+  if(q && isCJK(q)){
+    kws = expandQuery(q);
+    if(!kws.length) kws = translatedKws(q); /* 翻译兜底词也显示为 chips */
+  }else if(q){
+    kws = expandPinyin(q); /* 拼音命中也显示为 chips */
+  }
   if(!kws.length){
     kwBar.classList.add('ig-hide');
     state.tagFilter = '';
@@ -1233,7 +1322,7 @@ searchEl.addEventListener('input', () => {
     renderGrid();
     /* 词典未命中的中文词 -> 在线翻译兜底，结果回来后自动刷新 */
     const q = state.query.trim();
-    if(q && isCJK(q) && !expandQuery(q).length && !(q in ZH_TRANS)){
+    if(q && isCJK(q) && !expandQuery(q).length && !translatedKws(q).length){
       translateZh2En(q).then(en => {
         if(en && state.query.trim() === q){
           renderKwBar();

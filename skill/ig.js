@@ -37,6 +37,16 @@ const ZH_MAP = (() => {
   }
 })();
 
+/* ---------- Pinyin index (feiji / fj / shanchu / sc ...) ---------- */
+const ZH_PINYIN = (() => {
+  try {
+    const idx = JSON.parse(fs.readFileSync(path.join(__dirname, "zh-index.json"), "utf8"));
+    return idx._pinyin || {};
+  } catch (e) {
+    return {};
+  }
+})();
+
 /* ---------- Online translation fallback (MyMemory, free, no key) ---------- */
 const ZH_TRANS_CACHE = new Map();
 async function translateZh2En(q) {
@@ -355,10 +365,18 @@ function isCJK(q) {
 
 function expandQuery(q) {
   const kws = new Set();
+  expandGroups(q).forEach((g) => g.forEach((k) => kws.add(k)));
+  return [...kws];
+}
+
+/* 中文分词 -> 关键词分组（每个命中的词条 = 一组同义词） */
+function expandGroups(q) {
+  const groups = [];
+  const seen = new Set();
   let i = 0;
   while (i < q.length) {
     let matched = '';
-    for (let len = 4; len >= 1; len--) {
+    for (let len = 5; len >= 1; len--) {
       if (i + len > q.length) continue;
       const seg = q.slice(i, i + len);
       if (ZH_MAP[seg]) {
@@ -367,62 +385,152 @@ function expandQuery(q) {
       }
     }
     if (matched) {
-      ZH_MAP[matched].forEach((k) => kws.add(k));
+      if (!seen.has(matched)) {
+        seen.add(matched);
+        groups.push(ZH_MAP[matched]);
+      }
       i += matched.length;
     } else {
       i++;
     }
   }
-  return [...kws];
+  return groups;
 }
 
-function filterNames(names, tags, query, tagFilter, kwsOverride) {
+/* 拼音查询：feiji / fj / shanchu / sc */
+function expandPinyin(q) {
+  return expandPinyinGroups(q).reduce((a, g) => a.concat(g), []);
+}
+
+function expandPinyinGroups(q) {
+  const parts = q.toLowerCase().split(/\s+/).filter(Boolean);
+  if (!parts.length || !Object.keys(ZH_PINYIN).length) return [];
+  const groups = [];
+  const seen = new Set();
+  for (const p of parts) {
+    const hit = ZH_PINYIN[p];
+    if (hit && !seen.has(p)) {
+      seen.add(p);
+      groups.push(hit);
+    }
+  }
+  return groups;
+}
+
+/* ---------- 评分排序匹配（与 Web 端同逻辑） ---------- */
+function tokenize(n) {
+  return n.replace(/([a-z0-9])([A-Z])/g, '$1 $2').split(/[-_.\s]+/).filter(Boolean);
+}
+
+const TOKEN_CACHE = new Map();
+function tokensOf(name) {
+  if (!TOKEN_CACHE.has(name)) TOKEN_CACHE.set(name, tokenize(name));
+  return TOKEN_CACHE.get(name);
+}
+
+function scoreName(kw, tokens) {
+  if (!kw) return 0;
+  if (tokens.includes(kw)) return 100;
+  const kwToks = kw.split('-').filter(Boolean);
+  if (kwToks.length > 1 && kwToks.every((t) => tokens.includes(t))) return 85;
+  let best = 0;
+  for (const t of tokens) {
+    if (t.startsWith(kw)) best = Math.max(best, 70);
+    else if (kw.length >= 3 && t.includes(kw)) best = Math.max(best, 40);
+  }
+  return best;
+}
+
+/* 评分过滤 + 排序（分组语义）：组内 OR，组间 AND */
+function rankMatch(names, kws, tags) {
+  return rankMatchGroups(names, [kws], tags);
+}
+
+function rankMatchGroups(names, groups, tags) {
+  if (!groups.length) return [];
+  const out = [];
+  for (const n of names) {
+    const tokens = tokensOf(n);
+    const t = tags[n];
+    let total = 0;
+    let groupHits = 0;
+    for (const g of groups) {
+      let best = 0;
+      for (const kw of g) {
+        let s = scoreName(kw, tokens);
+        if (!s && t && t.some((x) => x.includes(kw))) s = 40;
+        if (s > best) best = s;
+      }
+      if (best > 0) {
+        total += best;
+        groupHits++;
+      }
+    }
+    if (groupHits === groups.length) {
+      if (groups.length > 1) total += 50 * (groups.length - 1);
+      total -= tokens.length * 0.5;
+      out.push([n, total]);
+    }
+  }
+  out.sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+  return out.map((x) => x[0]);
+}
+
+function filterNames(names, tags, query, tagFilter, groupsOverride) {
   const q = query.trim().toLowerCase();
   if (!q) return names;
-  if (isCJK(q)) {
-    const kws = kwsOverride || expandQuery(q);
-    if (!kws.length) return [];
-    const tagList = tagFilter ? [tagFilter] : kws;
-    return names.filter((n) => {
-      if (tagList.some((k) => n.includes(k))) return true;
-      const t = tags[n];
-      return t && t.length && tagList.some((k) => t.some((x) => x.includes(k)));
-    });
+  /* 中文 / 拼音 / 翻译关键词：分组评分排序 */
+  if (isCJK(q) || (groupsOverride && groupsOverride.length)) {
+    let groups = groupsOverride;
+    if (!groups) {
+      groups = expandGroups(q);
+      if (!groups.length) groups = expandPinyinGroups(q);
+      if (!groups.length) {
+        const tk = [];
+        /* 翻译兜底词在 search() 里已解析 */
+        return [];
+      }
+    }
+    if (tagFilter) return rankMatch(names, [tagFilter], tags);
+    return rankMatchGroups(names, groups, tags);
   }
-  if (tagFilter) return names.filter((n) => n.includes(tagFilter));
-  return names.filter(
-    (n) => n.includes(q) || (tags[n] && tags[n].some((x) => x.includes(q)))
-  );
+  if (tagFilter) return rankMatch(names, [tagFilter], tags);
+  return rankMatch(names, [q], tags);
 }
 
-/* CJK 查询：词典命中 -> 直接用；未命中 -> 在线翻译兜底 */
+/* CJK / 拼音查询：词典 -> 拼音 -> 在线翻译 三级兜底，返回分组 */
 async function resolveCJKKeywords(query) {
-  const kws = expandQuery(query);
-  if (kws.length) return { kws, via: 'dictionary' };
+  const groups = expandGroups(query);
+  if (groups.length) return { groups, via: 'dictionary' };
+  const py = expandPinyinGroups(query);
+  if (py.length) return { groups: py, via: 'pinyin' };
   const en = await translateZh2En(query);
   if (en) {
     const tkws = en.split(/[^a-z0-9]+/).filter((w) => w.length > 1);
-    if (tkws.length) return { kws: tkws, via: 'translation' };
+    if (tkws.length) return { groups: [tkws], via: 'translation' };
   }
-  return { kws: [], via: 'none' };
+  return { groups: [], via: 'none' };
 }
 
 async function search(query, { lib: libId, limit = 20, json: asJson } = {}) {
   const libsToSearch = libId ? [libId] : Object.keys(LIBS);
   const results = [];
 
-  let kwOverride = null;
+  let groupsOverride = null;
   let via = 'dictionary';
-  if (isCJK(query)) {
+  /* 中文或拼音查询：词典 -> 拼音 -> 翻译 三级解析 */
+  if (isCJK(query) || expandPinyinGroups(query).length) {
     const r = await resolveCJKKeywords(query);
-    kwOverride = r.kws;
+    groupsOverride = r.groups;
     via = r.via;
-    if (!kwOverride.length) {
-      console.log('No icons found. (词典与翻译均未命中该中文词)');
+    if (!groupsOverride.length) {
+      console.log('No icons found. (词典、拼音与翻译均未命中该词)');
       return asJson ? [] : undefined;
     }
-    if (!asJson && via === 'translation') {
-      console.log(`(词典未命中，已通过在线翻译: ${query} -> ${kwOverride.join(' ')})`);
+    if (!asJson && via !== 'dictionary') {
+      const viaLabel = { pinyin: '拼音', translation: '在线翻译' }[via] || via;
+      const flat = groupsOverride.reduce((a, g) => a.concat(g), []);
+      console.log(`(词典未命中，已通过${viaLabel}: ${query} -> ${flat.join(' ')})`);
     }
   }
 
@@ -432,7 +540,7 @@ async function search(query, { lib: libId, limit = 20, json: asJson } = {}) {
       const names = data.sets
         ? [...new Set([...(data.sets.line || []), ...(data.sets.fill || []), ...(data.sets.solid || []), ...(data.sets.regular || []), ...(data.sets.brands || [])])].sort()
         : data.names;
-      const matched = filterNames(names, data.tags || {}, query, null, kwOverride);
+      const matched = filterNames(names, data.tags || {}, query, null, groupsOverride);
       matched.slice(0, limit).forEach((name) => {
         results.push({ library: id, name });
       });
