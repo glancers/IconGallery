@@ -1301,6 +1301,31 @@ function copyText(text){
 
 /* ================= 详情弹窗 ================= */
 function pascal(n){ return n.split('-').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(''); }
+/* 各库 React/Vue 组件代码（按库官方 npm 包名生成 import + 用法） */
+function reactCode(lib, name){
+  const P = pascal(name);
+  switch(lib){
+    case 'lucide':    return "import { " + P + " } from 'lucide-react';\n\n<" + P + " size={24} />";
+    case 'heroicons': return "import { " + P + "Icon } from '@heroicons/react/" + (state.hi === 'mini' ? '20/solid' : '24/' + state.hi) + "';\n\n<" + P + "Icon className=\"h-6 w-6\" />";
+    case 'octicons':  return "import { " + P + "Icon } from '@primer/octicons-react';\n\n<" + P + "Icon size={24} />";
+    case 'antd':      return "import { " + P + ({ outlined:'Outlined', filled:'Filled', twotone:'TwoTone' }[state.antd]) + " } from '@ant-design/icons';\n\n<" + P + ({ outlined:'Outlined', filled:'Filled', twotone:'TwoTone' }[state.antd]) + " />";
+    case 'iconoir':   return "import { " + P + " } from '@iconoir/react';\n\n<" + P + " width=\"24\" height=\"24\" />";
+    case 'phosphor':  return "import { " + P + " } from '@phosphor-icons/react';\n\n<" + P + " size={24} />";
+    default: return '';
+  }
+}
+function vueCode(lib, name){
+  const P = pascal(name);
+  switch(lib){
+    case 'lucide':    return "import { " + P + " } from 'lucide-vue-next';\n\n<" + P + " :size=\"24\" />";
+    case 'feather':   return "import { " + P + " } from 'feather-icons-vue';\n\n<" + P + " width=\"24\" height=\"24\" />";
+    case 'ionicons':  return "import { IonIcon } from '@ionic/vue';\n\n<ion-icon name=\"" + name + "\"></ion-icon>";
+    case 'antd':      return "import { " + P + ({ outlined:'Outlined', filled:'Filled', twotone:'TwoTone' }[state.antd]) + " } from '@ant-design/icons-vue';\n\n<" + P + ({ outlined:'Outlined', filled:'Filled', twotone:'TwoTone' }[state.antd]) + " />";
+    case 'phosphor':  return "import { " + P + " } from '@phosphor-icons/vue';\n\n<" + P + " :size=\"24\" />";
+    case 'remix':     return "import { Ri" + P + ({ line:'Line', fill:'Fill' }[state.remix]) + " } from '@remixicon/vue';\n\n<Ri" + P + ({ line:'Line', fill:'Fill' }[state.remix]) + " />";
+    default: return '';
+  }
+}
 function codeRow(label, value){
   const wrap = document.createElement('div');
   const multiline = value.indexOf('\n') >= 0;
@@ -1377,7 +1402,6 @@ async function openDetail(name){
     let svg = '';
     try{ svg = await getSvg(heroiconsUrl(name)); }catch(e){}
     rows.push(['名称', name]);
-    rows.push(['React 组件', "import { " + pascal(name) + "Icon } from '@heroicons/react/" + (state.hi === 'mini' ? '20/solid' : '24/' + state.hi) + "'"]);
     if(svg) rows.push(['SVG 代码', svg]);
   }else if(lib === 'ionicons'){
     let svg = '';
@@ -1389,7 +1413,6 @@ async function openDetail(name){
     let svg = '';
     try{ svg = await getSvg(octiconsUrl(name), true); }catch(e){}
     rows.push(['名称', name]);
-    rows.push(['React 组件', "import { " + pascal(name) + "Icon } from '@primer/octicons-react'"]);
     if(svg) rows.push(['SVG 代码', svg]);
   }else if(lib === 'devicons'){
     let svg = '';
@@ -1407,9 +1430,7 @@ async function openDetail(name){
   }else if(lib === 'antd'){
     let svg = '';
     try{ svg = await getSvg(antdUrl(name), true); }catch(e){}
-    const suffix = { outlined:'Outlined', filled:'Filled', twotone:'TwoTone' }[state.antd];
     rows.push(['名称', name]);
-    rows.push(['React 组件', "import { " + pascal(name) + suffix + " } from '@ant-design/icons'"]);
     if(svg) rows.push(['SVG 代码', svg]);
   }else if(lib === 'mingcute'){
     let svg = '';
@@ -1420,7 +1441,6 @@ async function openDetail(name){
     let svg = '';
     try{ svg = await getSvg(iconoirUrl(name)); }catch(e){}
     rows.push(['名称', name]);
-    rows.push(['React 组件', "import { " + pascal(name) + " } from '@iconoir/react'"]);
     if(svg) rows.push(['SVG 代码', svg]);
   }else if(lib === 'flowbite'){
     let svg = '';
@@ -1430,6 +1450,10 @@ async function openDetail(name){
   }
   mRows.innerHTML = '';
   rows.forEach(r => mRows.appendChild(codeRow(r[0], r[1])));
+  /* 统一补 React / Vue 组件代码（有对应官方包的库才显示） */
+  const rc = reactCode(lib, name), vc = vueCode(lib, name);
+  if(rc) mRows.appendChild(codeRow('React 组件', rc));
+  if(vc) mRows.appendChild(codeRow('Vue 组件', vc));
   fillSlots(modal);
   modal.style.display = 'flex';
 }

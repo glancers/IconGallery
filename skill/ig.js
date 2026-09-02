@@ -164,7 +164,7 @@ const LIBS = {
         sets: { line: [...line].sort(), fill: [...fill].sort() },
       };
     },
-    usage: (name, set = 'line') => `<i class="ri ri-${name}-${set}"></i>`,
+    usage: (name, set) => `<i class="ri ri-${name}-${set || 'line'}"></i>`,
   },
 
   phosphor: {
@@ -268,9 +268,9 @@ const LIBS = {
         },
       };
     },
-    usage: (name, set = 'solid') => {
+    usage: (name, set) => {
       const base = { solid: 'fa-solid', regular: 'fa-regular', brands: 'fa-brands' };
-      return `<i class="${base[set]} fa-${name}"></i>`;
+      return `<i class="${base[set] || 'fa-solid'} fa-${name}"></i>`;
     },
   },
 
@@ -520,6 +520,35 @@ const LIBS = {
       `<img src="https://cdn.jsdelivr.net/npm/devicon@latest/icons/${name}/${name}-${((data && data.vers && data.vers[name]) || 'original')}.svg" width="24" alt="${name}">`,
   },
 };
+
+/* ---------- 组件代码模板（React/Vue，与 Web 端同逻辑） ---------- */
+function pascal(n) {
+  return n.split('-').map((s) => s.charAt(0).toUpperCase() + s.slice(1)).join('');
+}
+function reactCode(lib, name, style) {
+  const P = pascal(name);
+  switch (lib) {
+    case 'lucide':    return `import { ${P} } from 'lucide-react';\n\n<${P} size={24} />`;
+    case 'heroicons': return `import { ${P}Icon } from '@heroicons/react/${(style && style.hi) === 'mini' ? '20/solid' : '24/outline'}';\n\n<${P}Icon className="h-6 w-6" />`;
+    case 'octicons':  return `import { ${P}Icon } from '@primer/octicons-react';\n\n<${P}Icon size={24} />`;
+    case 'antd':      return `import { ${P}Outlined } from '@ant-design/icons';\n\n<${P}Outlined />`;
+    case 'iconoir':   return `import { ${P} } from '@iconoir/react';\n\n<${P} width="24" height="24" />`;
+    case 'phosphor':  return `import { ${P} } from '@phosphor-icons/react';\n\n<${P} size={24} />`;
+    default: return '';
+  }
+}
+function vueCode(lib, name, style) {
+  const P = pascal(name);
+  switch (lib) {
+    case 'lucide':    return `import { ${P} } from 'lucide-vue-next';\n\n<${P} :size="24" />`;
+    case 'feather':   return `import { ${P} } from 'feather-icons-vue';\n\n<${P} width="24" height="24" />`;
+    case 'ionicons':  return `import { IonIcon } from '@ionic/vue';\n\n<ion-icon name="${name}"></ion-icon>`;
+    case 'antd':      return `import { ${P}Outlined } from '@ant-design/icons-vue';\n\n<${P}Outlined />`;
+    case 'phosphor':  return `import { ${P} } from '@phosphor-icons/vue';\n\n<${P} :size="24" />`;
+    case 'remix':     return `import { Ri${P}${(style && style.remix) === 'fill' ? 'Fill' : 'Line'} } from '@remixicon/vue';\n\n<Ri${P}${(style && style.remix) === 'fill' ? 'Fill' : 'Line'} />`;
+    default: return '';
+  }
+}
 
 /* ---------- Core API ---------- */
 async function loadLib(id) {
@@ -800,8 +829,12 @@ async function get(name, { lib: libId } = {}) {
         } else if (lib.usage) {
           out.svg = lib.usage(name, null, data);
         }
-        if (lib.react) out.react = lib.react(name);
-        else out.html = lib.usage ? lib.usage(name) : '';
+        const rc = reactCode(id, name);
+        if (rc) out.react = rc;
+        else if (lib.react) out.react = lib.react(name);
+        else out.html = lib.usage ? lib.usage(name, null, data) : '';
+        const vue = vueCode(id, name);
+        if (vue) out.vue = vue;
         return out;
       }
     } catch (e) {
@@ -914,6 +947,11 @@ async function main() {
       if (result.react) {
         console.log('--- React Usage ---');
         console.log(result.react);
+        console.log();
+      }
+      if (result.vue) {
+        console.log('--- Vue Usage ---');
+        console.log(result.vue);
         console.log();
       }
     }
