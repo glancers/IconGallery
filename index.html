@@ -952,6 +952,27 @@ const ZH_MAP = {
 };
 /* 拼音索引（zh-index.json 的 _pinyin 字段），支持 feiji / fj / shanchu / sc */
 const ZH_PINYIN = {};
+/* 英文同义词表：从 ZH_MAP 反向构建（同组词互为同义，共现>=2 过滤噪音）。
+   语义搜索：搜 trash 也能召回 delete / bin 相关图标 */
+const EN_SYN = {};
+function buildEnSyn(){
+  const pair = {};
+  for(const kws of Object.values(ZH_MAP)){
+    const valid = kws.filter(k => k.length >= 3);
+    for(const a of valid){
+      if(!pair[a]) pair[a] = {};
+      for(const b of valid){
+        if(a !== b) pair[a][b] = (pair[a][b] || 0) + 1;
+      }
+    }
+  }
+  Object.keys(EN_SYN).forEach(k => delete EN_SYN[k]);
+  for(const [a, m] of Object.entries(pair)){
+    const syn = Object.keys(m).filter(b => m[b] >= 2);
+    if(syn.length) EN_SYN[a] = syn;
+  }
+}
+buildEnSyn();
 /* 加载共享词典（skill/zh-index.json，920+ 条），与 CLI 共用同一份数据 */
 fetch('skill/zh-index.json').then(r => r.ok ? r.json() : null).then(idx => {
   if(!idx) return;
@@ -960,6 +981,7 @@ fetch('skill/zh-index.json').then(r => r.ok ? r.json() : null).then(idx => {
     if(!k.startsWith('_')) ZH_MAP[k] = v;
   }
   if(idx._pinyin) Object.assign(ZH_PINYIN, idx._pinyin);
+  buildEnSyn();
   renderKwBar();
   renderGrid();
 }).catch(() => {/* file:// 等场景静默降级为内置词典 */});
@@ -1117,9 +1139,11 @@ function filtered(){
     if(state.tagFilter) return rankMatch(list, [state.tagFilter], tags);
     return rankMatchGroups(list, groups, tags);
   }
-  /* 纯英文查询：同样评分排序（精确 > 前缀 > 子串 > tags） */
+  /* 纯英文查询：同义词扩展（原词优先，共现强同义补召回）+ 多词组间 AND */
   if(state.tagFilter) return rankMatch(list, [state.tagFilter], tags);
-  return rankMatch(list, [q], tags);
+  const words = q.split(/\s+/).filter(Boolean);
+  const groups = words.map(w => [w].concat(EN_SYN[w] || []));
+  return rankMatchGroups(list, groups, tags);
 }
 
 /* ================= 渲染管线 ================= */

@@ -576,6 +576,27 @@ function expandPinyin(q) {
   return expandPinyinGroups(q).reduce((a, g) => a.concat(g), []);
 }
 
+/* 英文同义词表：从 ZH_MAP 反向构建（同组词互为同义，共现>=2 过滤噪音）。
+   语义搜索：搜 trash 也能召回 delete / bin 相关图标 */
+const EN_SYN = {};
+function buildEnSyn() {
+  const pair = {};
+  for (const kws of Object.values(ZH_MAP)) {
+    const valid = kws.filter((k) => k.length >= 3);
+    for (const a of valid) {
+      if (!pair[a]) pair[a] = {};
+      for (const b of valid) {
+        if (a !== b) pair[a][b] = (pair[a][b] || 0) + 1;
+      }
+    }
+  }
+  for (const [a, m] of Object.entries(pair)) {
+    const syn = Object.keys(m).filter((b) => m[b] >= 2);
+    if (syn.length) EN_SYN[a] = syn;
+  }
+}
+buildEnSyn();
+
 function expandPinyinGroups(q) {
   const parts = q.toLowerCase().split(/\s+/).filter(Boolean);
   if (!parts.length || !Object.keys(ZH_PINYIN).length) return [];
@@ -670,7 +691,10 @@ function filterNames(names, tags, query, tagFilter, groupsOverride) {
     return rankMatchGroups(names, groups, tags);
   }
   if (tagFilter) return rankMatch(names, [tagFilter], tags);
-  return rankMatch(names, [q], tags);
+  /* 纯英文查询：同义词扩展（原词优先）+ 多词组间 AND */
+  const words = q.split(/\s+/).filter(Boolean);
+  const groups = words.map((w) => [w].concat(EN_SYN[w] || []));
+  return rankMatchGroups(names, groups, tags);
 }
 
 /* CJK / 拼音查询：词典 -> 拼音 -> 在线翻译 三级兜底，返回分组 */
