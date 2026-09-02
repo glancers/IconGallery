@@ -4,7 +4,7 @@
 
 ## 核心能力
 
-通过 `ig` 命令行工具搜索、检索来自 11 个主流图标库的图标。支持中英文搜索。
+通过 `ig` 命令行工具搜索、检索来自 18 个主流图标库的图标。支持中文、拼音、英文同义词（语义）搜索。
 
 ## 调用方法
 
@@ -15,29 +15,34 @@ cd <repo-root> && node skill/ig.js list
 
 ### 2. 搜索图标（支持中文）
 ```bash
-# 英文搜索
+# 英文搜索（自动扩展同义词：trash 召回 delete / bin）
 node skill/ig.js search "delete"
 
-# 中文搜索（自动映射英文关键词）
+# 中文搜索（词典映射 + 拼音 + 在线翻译三级兜底）
 node skill/ig.js search "删除"
 node skill/ig.js search "天气"
 node skill/ig.js search "用户"
 
+# 拼音搜索（全拼 / 首字母）
+node skill/ig.js search "feiji"
+node skill/ig.js search "fj"
+
 # 限定图标库
 node skill/ig.js search "save" --lib lucide
 
-# 限制结果数量
-node skill/ig.js search "home" --limit 10
+# 限制结果数量 / 输出 JSON
+node skill/ig.js search "home" --limit 10 --json
 ```
 
-### 3. 获取 SVG 代码
+### 3. 获取图标 SVG 代码
 ```bash
 node skill/ig.js get "trash"
+node skill/ig.js get "home" --lib lucide
 ```
 返回内容包括：
 - SVG 源码
 - CDN CSS 链接
-- 用法代码（HTML / React 组件 / Web Component）
+- 用法代码（HTML / React 组件 / Vue 组件）
 
 ## 触发场景
 
@@ -62,19 +67,25 @@ node skill/ig.js get "trash"
 | heroicons | Heroicons |
 | ionicons | Ionicons |
 | boxicons | Boxicons |
+| octicons | Octicons |
+| antd | Ant Design Icons |
+| feather | Feather Icons |
+| mingcute | MingCute Icon |
+| iconoir | Iconoir |
+| flowbite | Flowbite Icons |
+| devicons | Devicons |
 
 ## 安装说明
 
 此 Skill 内置在仓库中，结构如下：
 ```
-icon/
+IconGallery/
 ├── skill/
-│   └── ig.js            # CLI 核心脚本
-├── .trae/skills/
-│   └── icon-gallery/
-│       └── SKILL.md     # Trae 定义
+│   ├── ig.js            # CLI 核心脚本
+│   ├── SKILL.md         # 可移植 Skill 定义
+│   └── zh-index.json    # 共享中文词典
 ├── AGENTS.md            # 通用 Agent 定义 (本文件)
 └── README.md            # 项目说明
 ```
 
-在 Trae 中，技能会自动加载。对于其他 Agent，可以手动将 `AGENTS.md` 的内容配置到 Agent 的系统提示或工具定义中，并确保 `skill/ig.js` 可用。
+将 `AGENTS.md` 或 `skill/SKILL.md` 的内容配置到 Agent 的系统提示或工具定义中，并确保 `skill/ig.js` 可用（仅需 Node.js，零依赖）。

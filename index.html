@@ -64,6 +64,25 @@ html.dark{
 @keyframes cardIn{from{opacity:0;transform:translateY(4px)}to{opacity:1}}
 @keyframes pulse{50%{opacity:.05}}
 
+/* ---------- 收藏 ---------- */
+.card{position:relative}
+.fav-btn{position:absolute;top:6px;right:6px;width:24px;height:24px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--label);opacity:0;cursor:pointer;transition:opacity .15s,color .15s,background-color .15s;z-index:1}
+.card:hover .fav-btn{opacity:.75}
+.fav-btn:hover{opacity:1 !important;color:#e11d48;background:rgba(225,29,72,.08)}
+.fav-btn.on{opacity:1;color:#e11d48}
+.fav-btn svg{width:13px;height:13px}
+#fav-bar{display:flex;align-items:center;gap:2px;height:40px;padding:0 6px 0 12px;border-radius:999px;background:#ffffffee;backdrop-filter:blur(8px);border:1px solid var(--card-bd);box-shadow:0 8px 24px rgba(0,0,0,.14)}
+html.dark #fav-bar{background:#18181bee}
+#fav-bar .fb-txt{font-size:12px;color:var(--label);white-space:nowrap}
+#fav-bar button{height:28px;padding:0 10px;border-radius:999px;font-size:12px;color:var(--label);cursor:pointer;transition:background-color .15s,color .15s}
+#fav-bar button:hover{background:var(--hover-bg)}
+#fav-bar button.primary{background:#6366f1;color:#fff}
+#fav-bar button.primary:hover{background:#4f46e5}
+#fav-bar button.danger-armed{color:#e11d48;background:rgba(225,29,72,.1)}
+.cmp-cell{display:flex;flex-direction:column;align-items:center;gap:8px;padding:16px 8px 12px;border-radius:14px;border:1px solid var(--card-bd);background:var(--card-bg);cursor:pointer;transition:border-color .15s}
+.cmp-cell:hover{border-color:rgba(99,102,241,.55)}
+.cmp-cell .slot{width:64px;height:64px;font-size:64px}
+
 /* ---------- 侧栏库列表 ---------- */
 .lib-item{display:flex;align-items:center;gap:10px;width:100%;padding:8px 10px;border-radius:12px;border:1px solid transparent;cursor:pointer;transition:background .15s,border-color .15s;text-align:left}
 .lib-item:hover{background:var(--hover-bg)}
@@ -297,6 +316,10 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;
         <span class="hidden sm:inline">glancers/IconGallery</span>
       </a>
 
+      <button id="share-btn" class="h-9 w-9 rounded-full border border-zinc-200 dark:border-zinc-800 flex items-center justify-center text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-100 hover:border-zinc-300 dark:hover:border-zinc-700 transition" title="复制当前视图链接（库 / 搜索词 / 风格都会带上）" aria-label="分享当前视图">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+      </button>
+
       <button id="theme-btn" class="h-9 pl-2 pr-2.5 rounded-full border border-zinc-200 dark:border-zinc-800 flex items-center gap-1 text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-100 hover:border-zinc-300 dark:hover:border-zinc-700 transition" aria-label="切换主题">
         <span id="icon-sun" class="inline-flex items-center gap-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="w-4 h-4"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg><span class="text-xs font-medium">明亮</span></span>
         <span id="icon-moon" class="hidden"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg><span class="text-xs font-medium">黑暗</span></span>
@@ -361,6 +384,24 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;
 
 <!-- 复制成功提示 -->
 <div id="toasts" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] flex flex-col items-center gap-2 pointer-events-none"></div>
+
+<!-- 收藏栏（有收藏时显示） -->
+<div id="fav-bar" class="ig-hide fixed bottom-5 right-5 z-40"></div>
+
+<!-- ================= 收藏对比弹窗 ================= -->
+<div id="compare" style="display:none" class="fixed inset-0 z-50 items-center justify-center p-4">
+  <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" data-cclose></div>
+  <div class="relative w-full max-w-3xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-2xl max-h-[88vh] overflow-y-auto p-5 sm:p-6">
+    <button data-cclose class="absolute top-3.5 right-3.5 w-8 h-8 rounded-lg flex items-center justify-center text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-lg leading-none" aria-label="关闭">×</button>
+    <div class="flex items-center gap-3 mb-1 pr-8">
+      <h3 class="font-semibold text-base">图标对比</h3>
+      <span id="cmp-count" class="text-xs text-zinc-400"></span>
+    </div>
+    <p class="text-xs text-zinc-400 mb-5">跨库收藏的图标横向对照，点击任意一个查看代码</p>
+    <div id="cmp-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3"></div>
+    <p id="cmp-empty" class="ig-hide py-16 text-center text-sm text-zinc-400">还没有收藏任何图标——鼠标移到图标上点右上角心形按钮收藏</p>
+  </div>
+</div>
 
 <script>
 (function(){
@@ -712,6 +753,8 @@ const I_COPY = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strok
 const I_CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M20 6 9 17l-5-5"/></svg>';
 const I_ALERT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" class="w-10 h-10"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>';
 const I_EMPTY = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" class="w-10 h-10"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/><path d="m8 8 6 6M14 8l-6 6"/></svg>';
+const I_HEART = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>';
+const I_HEART_ON = '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>';
 
 /* ================= 状态 ================= */
 let state = { lib:'lucide', query:'', tagFilter:'', size:40, color:'', stroke:2, remix:'line', ph:'regular', msFill:0, msWght:400, fa:'solid', bx:'regular', hi:'outline', ion:'filled', antd:'outlined', ming:'line', iconoir:'regular', flow:'outline' };
@@ -720,7 +763,39 @@ try{
   if(LIB_MAP[s.lib]) state.lib = s.lib;
   ['size','stroke','remix','ph','msFill','msWght','color','fa','bx','hi','ion','antd','ming','iconoir','flow'].forEach(k => { if(s[k] !== undefined) state[k] = s[k]; });
 }catch(e){}
-function saveState(){ try{ localStorage.setItem('ig:state', JSON.stringify(state)); }catch(e){} }
+/* URL hash 状态分享：#lib=lucide&q=star&size=40&color=%23f00&remix=line...
+   带 hash 打开时优先于 localStorage；hash 里只写非默认值保持短链 */
+const STATE_KEYS = ['size','stroke','remix','ph','msFill','msWght','color','fa','bx','hi','ion','antd','ming','iconoir','flow'];
+const STATE_DEFAULTS = { lib:'lucide', query:'', tagFilter:'', size:40, color:'', stroke:2, remix:'line', ph:'regular', msFill:0, msWght:400, fa:'solid', bx:'regular', hi:'outline', ion:'filled', antd:'outlined', ming:'line', iconoir:'regular', flow:'outline' };
+(function applyHashState(){
+  if(!location.hash || location.hash.length < 2) return;
+  const p = new URLSearchParams(location.hash.slice(1));
+  const lib = p.get('lib');
+  if(lib && LIB_MAP[lib]) state.lib = lib;
+  const q = p.get('q');
+  if(q !== null) state.query = q;
+  STATE_KEYS.forEach(k => {
+    const v = p.get(k);
+    if(v === null) return;
+    /* 数字项转回数字 */
+    if(['size','stroke','msFill','msWght'].includes(k)){
+      const n = Number(v);
+      if(!Number.isNaN(n)) state[k] = n;
+    }else state[k] = v;
+  });
+})();
+function writeHash(){
+  const p = new URLSearchParams();
+  if(state.lib !== STATE_DEFAULTS.lib) p.set('lib', state.lib);
+  if(state.query) p.set('q', state.query);
+  STATE_KEYS.forEach(k => {
+    if(state[k] !== STATE_DEFAULTS[k]) p.set(k, String(state[k]));
+  });
+  const h = p.toString();
+  /* replaceState 不污染历史记录 */
+  history.replaceState(null, '', h ? '#' + h : location.pathname + location.search);
+}
+function saveState(){ try{ localStorage.setItem('ig:state', JSON.stringify(state)); }catch(e){} writeHash(); }
 
 /* ================= DOM ================= */
 const grid = $('#grid'), sentinel = $('#sentinel'), endNote = $('#end-note');
@@ -1146,6 +1221,73 @@ function filtered(){
   return rankMatchGroups(list, groups, tags);
 }
 
+/* ================= 收藏 ================= */
+let favs = [];
+try{ favs = JSON.parse(localStorage.getItem('ig:favs') || '[]'); }catch(e){}
+function saveFavs(){ try{ localStorage.setItem('ig:favs', JSON.stringify(favs)); }catch(e){} }
+function isFav(libId, name){ return favs.some(f => f.lib === libId && f.name === name); }
+function toggleFav(libId, name){
+  const i = favs.findIndex(f => f.lib === libId && f.name === name);
+  if(i >= 0) favs.splice(i, 1); else favs.push({ lib: libId, name });
+  saveFavs();
+  renderFavBar();
+}
+/* 收藏栏：有收藏时右下角浮出 */
+const favBar = $('#fav-bar'), cmpModal = $('#compare'), cmpGrid = $('#cmp-grid'), cmpCount = $('#cmp-count'), cmpEmpty = $('#cmp-empty');
+let clearArmed = null;
+function renderFavBar(){
+  if(!favs.length){ favBar.classList.add('ig-hide'); favBar.innerHTML = ''; return; }
+  favBar.classList.remove('ig-hide');
+  favBar.innerHTML =
+    '<span class="fb-txt" style="display:flex;align-items:center;gap:5px;color:#e11d48">' + I_HEART_ON + favs.length + '</span>' +
+    '<button id="fb-cmp" class="primary">对比</button>' +
+    '<button id="fb-clear"' + (clearArmed ? ' class="danger-armed"' : '') + '>' + (clearArmed ? '确认清空？' : '清空') + '</button>';
+  $('#fb-cmp').addEventListener('click', openCompare);
+  $('#fb-clear').addEventListener('click', () => {
+    /* 两段式确认，避免误触 */
+    if(clearArmed){
+      clearTimeout(clearArmed);
+      clearArmed = null;
+      favs = [];
+      saveFavs();
+      renderGrid();
+    }else{
+      clearArmed = setTimeout(() => { clearArmed = null; renderFavBar(); }, 3000);
+    }
+    renderFavBar();
+  });
+}
+function openCompare(){
+  cmpCount.textContent = favs.length + ' 个图标';
+  cmpGrid.innerHTML = '';
+  cmpEmpty.classList.toggle('ig-hide', favs.length > 0);
+  cmpGrid.classList.toggle('ig-hide', favs.length === 0);
+  favs.forEach(f => {
+    /* svgFetch 库的 URL 需要库数据（分类/尺寸映射），确保已加载 */
+    if(LIB_MAP[f.lib] && LIB_MAP[f.lib].svgFetch) ensureLib(f.lib);
+    const cell = document.createElement('button');
+    cell.className = 'cmp-cell';
+    cell.dataset.lib = f.lib;
+    cell.dataset.name = f.name;
+    cell.innerHTML = slotHTML(f.lib, f.name, null) +
+      '<span class="cname">' + f.name + '</span>' +
+      '<span class="text-[10px] text-zinc-400 flex items-center gap-1"><span class="inline-block w-1.5 h-1.5 rounded-full" style="background:' + LIB_MAP[f.lib].accent + '"></span>' + LIB_MAP[f.lib].label + '</span>';
+    cmpGrid.appendChild(cell);
+  });
+  fillSlots(cmpGrid);
+  cmpModal.style.display = 'flex';
+}
+function closeCompare(){ cmpModal.style.display = 'none'; }
+cmpModal.addEventListener('click', e => {
+  if(e.target.closest('[data-cclose]')){ closeCompare(); return; }
+  const cell = e.target.closest('.cmp-cell');
+  if(cell){
+    closeCompare();
+    selectLib(cell.dataset.lib);
+    openDetail(cell.dataset.name);
+  }
+});
+
 /* ================= 渲染管线 ================= */
 let gen = 0, rendered = 0;
 function glyphHTML(lib, name){
@@ -1179,7 +1321,10 @@ function slotHTML(lib, name, size){
   return '<span class="slot"' + st + '>' + glyphHTML(lib, name) + '</span>';
 }
 function cardHTML(name){
-  return '<button class="card" data-name="' + name + '" title="' + name + '">' + slotHTML(state.lib, name, null) + '<span class="cname">' + name + '</span></button>';
+  const on = isFav(state.lib, name);
+  return '<button class="card" data-name="' + name + '" title="' + name + '">' +
+    '<span class="fav-btn' + (on ? ' on' : '') + '" data-fav="' + name + '" role="button" aria-label="收藏">' + (on ? I_HEART_ON : I_HEART) + '</span>' +
+    slotHTML(state.lib, name, null) + '<span class="cname">' + name + '</span></button>';
 }
 function renderGrid(){
   gen++; rendered = 0;
@@ -1460,6 +1605,17 @@ async function openDetail(name){
 function closeModal(){ modal.style.display = 'none'; }
 modal.addEventListener('click', e => { if(e.target.closest('[data-close]')) closeModal(); });
 grid.addEventListener('click', e => {
+  const fb = e.target.closest('.fav-btn');
+  if(fb){
+    e.preventDefault();
+    e.stopPropagation();
+    const on = isFav(state.lib, fb.dataset.fav);
+    toggleFav(state.lib, fb.dataset.fav);
+    /* 就地更新心形，不重渲染网格 */
+    fb.classList.toggle('on', !on);
+    fb.innerHTML = !on ? I_HEART_ON : I_HEART;
+    return;
+  }
   const c = e.target.closest('.card');
   if(c) openDetail(c.dataset.name);
 });
@@ -1603,6 +1759,7 @@ searchEl.addEventListener('input', () => {
     state.tagFilter = '';
     clearBtn.classList.toggle('hidden', !searchEl.value);
     kbdHint.classList.toggle('hidden', !!searchEl.value);
+    writeHash();
     renderKwBar();
     renderGrid();
     /* 词典未命中的中文词 -> 在线翻译兜底，结果回来后自动刷新 */
@@ -1623,6 +1780,7 @@ clearBtn.addEventListener('click', () => {
   state.tagFilter = '';
   clearBtn.classList.add('hidden');
   kbdHint.classList.remove('hidden');
+  writeHash();
   renderKwBar();
   renderGrid();
   searchEl.focus();
@@ -1647,6 +1805,11 @@ $('#theme-btn').addEventListener('click', () => {
   const dark = document.documentElement.classList.toggle('dark');
   try{ localStorage.setItem('ig:theme', dark ? 'dark' : 'light'); }catch(e){}
   updateThemeIcon();
+});
+
+$('#share-btn').addEventListener('click', () => {
+  writeHash();
+  copyText(location.href);
 });
 
 function closeDrawer(){
@@ -1675,8 +1838,9 @@ document.addEventListener('keydown', e => {
     e.preventDefault();
     searchEl.focus();
     searchEl.select();
-  }else if(e.key === 'Escape' && modal.style.display !== 'none'){
-    closeModal();
+  }else if(e.key === 'Escape'){
+    if(cmpModal.style.display !== 'none') closeCompare();
+    else if(modal.style.display !== 'none') closeModal();
   }
 });
 
@@ -1694,11 +1858,18 @@ function selectLib(id){
 sizeSlider.value = state.size;
 strokeSlider.value = state.stroke;
 msWghtSlider.value = state.msWght;
+/* URL hash 带搜索词时回填输入框 */
+if(state.query){
+  searchEl.value = state.query;
+  clearBtn.classList.remove('hidden');
+  kbdHint.classList.add('hidden');
+}
 buildSidebar();
 buildChips();
 buildSwatches();
 applyVars();
 updateThemeIcon();
+renderFavBar();
 
 /* 侧栏星形预览：立即填充字形并预注入全部 CSS，字体在后台并行下载，不等待库数据加载 */
 LIBS.forEach(lib => injectCss(lib.id));

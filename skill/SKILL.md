@@ -1,11 +1,11 @@
 ---
 name: "icon-gallery"
-description: "Search and retrieve icons from 11 major icon libraries. Invoke when user needs icons, asks to find an icon, or requests SVG/CDN usage for a specific icon."
+description: "Search and retrieve icons from 18 major icon libraries. Invoke when user needs icons, asks to find an icon, or requests SVG/CDN usage for a specific icon."
 ---
 
 # IconGallery Skill
 
-You have access to a CLI tool for searching and retrieving icons from 11 major libraries.
+You have access to a CLI tool for searching and retrieving icons from 18 major libraries.
 
 ## How to Use
 
@@ -17,20 +17,23 @@ cd <repo-root> && node skill/ig.js list
 ```
 
 ### 2. Search for Icons
-Supports both English and Chinese (中文) queries.
+Supports English (with synonym expansion), Chinese (中文), and pinyin queries.
 
 ```bash
-# English search
+# English search (synonym expansion: trash also recalls delete / bin)
 cd <repo-root> && node skill/ig.js search "delete"
 
-# Chinese search with automatic keyword expansion
+# Chinese search (dictionary -> pinyin -> online translation fallback)
 cd <repo-root> && node skill/ig.js search "删除"
 cd <repo-root> && node skill/ig.js search "天气"
-cd <repo-root> && node skill/ig.js search "用户"
+
+# Pinyin search (full / initials)
+cd <repo-root> && node skill/ig.js search "feiji"
+cd <repo-root> && node skill/ig.js search "fj"
 ```
 
 **Options:**
-- `--lib <library-id>`: Filter to a specific library (e.g., `lucide`, `tabler`, `phosphor`)
+- `--lib <library-id>`: Filter to a specific library (e.g., `lucide`, `tabler`, `phosphor`, `antd`, `octicons`)
 - `--limit <N>`: Limit results (default: 20)
 - `--json`: Output raw JSON
 
@@ -39,12 +42,13 @@ Retrieves the raw SVG source and usage code for a specific icon.
 
 ```bash
 cd <repo-root> && node skill/ig.js get "trash"
+cd <repo-root> && node skill/ig.js get "home" --lib lucide
 ```
 
 This returns:
 - SVG Source (inline code)
 - CDN CSS link
-- Usage code (HTML / React component / Web Component)
+- Usage code (HTML / React component / Vue component)
 
 ## Trigger Conditions
 
@@ -60,6 +64,7 @@ Invoke this skill when the user:
 
 - Lucide, Tabler, Remix, Phosphor, Bootstrap, Material Symbols
 - Font Awesome, MDI, Heroicons, Ionicons, Boxicons
+- Octicons, Ant Design Icons, Feather, MingCute, Iconoir, Flowbite, Devicons
 
 ## Examples
 
