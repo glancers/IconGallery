@@ -316,10 +316,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;
         <span class="hidden sm:inline">glancers/IconGallery</span>
       </a>
 
-      <button id="share-btn" class="h-9 w-9 rounded-full border border-zinc-200 dark:border-zinc-800 flex items-center justify-center text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-100 hover:border-zinc-300 dark:hover:border-zinc-700 transition" title="复制当前视图链接（库 / 搜索词 / 风格都会带上）" aria-label="分享当前视图">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-      </button>
-
       <button id="theme-btn" class="h-9 pl-2 pr-2.5 rounded-full border border-zinc-200 dark:border-zinc-800 flex items-center gap-1 text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-100 hover:border-zinc-300 dark:hover:border-zinc-700 transition" aria-label="切换主题">
         <span id="icon-sun" class="inline-flex items-center gap-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="w-4 h-4"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg><span class="text-xs font-medium">明亮</span></span>
         <span id="icon-moon" class="hidden"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg><span class="text-xs font-medium">黑暗</span></span>
@@ -1496,16 +1492,14 @@ function vueCode(lib, name){
 }
 function codeRow(label, value){
   const wrap = document.createElement('div');
-  const multiline = value.indexOf('\n') >= 0;
   wrap.innerHTML =
     '<div class="text-xs text-zinc-500 mb-1.5">' + label + '</div>' +
     '<div class="flex gap-2">' +
-      (multiline ? '<textarea readonly rows="2" class="code-box"></textarea>' : '<input readonly class="code-box">') +
+      '<input readonly class="code-box">' +
       '<button class="copy-btn" title="复制">' + I_COPY + '</button>' +
     '</div>';
-  const field = wrap.querySelector('input,textarea');
+  const field = wrap.querySelector('input');
   field.value = value;
-  if (field.tagName === 'TEXTAREA') field.rows = Math.min(Math.max(value.split('\n').length, 2), 12);
   field.addEventListener('focus', e => e.target.select());
   wrap.querySelector('.copy-btn').addEventListener('click', () => copyText(field.value));
   return wrap;
@@ -1833,11 +1827,6 @@ $('#theme-btn').addEventListener('click', () => {
   const dark = document.documentElement.classList.toggle('dark');
   try{ localStorage.setItem('ig:theme', dark ? 'dark' : 'light'); }catch(e){}
   updateThemeIcon();
-});
-
-$('#share-btn').addEventListener('click', () => {
-  writeHash();
-  copyText(location.href);
 });
 
 function closeDrawer(){
