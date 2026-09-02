@@ -7,10 +7,16 @@ const fs = require('fs');
 const path = require('path');
 
 /* ---------- HTTP helpers ---------- */
-function fetchText(url) {
+function fetchText(url, redirects = 5) {
   return new Promise((resolve, reject) => {
     const proto = url.startsWith('https') ? https : http;
     proto.get(url, (res) => {
+      /* 跟随重定向（unpkg @latest 等场景） */
+      if ([301, 302, 307, 308].includes(res.statusCode) && res.headers.location && redirects > 0) {
+        res.resume();
+        fetchText(new URL(res.headers.location, url).toString(), redirects - 1).then(resolve, reject);
+        return;
+      }
       let data = '';
       res.on('data', (chunk) => (data += chunk));
       res.on('end', () => resolve(data));
@@ -519,6 +525,29 @@ const LIBS = {
     usage: (name, _set, data) =>
       `<img src="https://cdn.jsdelivr.net/npm/devicon@latest/icons/${name}/${name}-${((data && data.vers && data.vers[name]) || 'original')}.svg" width="24" alt="${name}">`,
   },
+
+  iconpark: {
+    name: 'IconPark',
+    site: 'https://iconpark.oceanengine.com',
+    css: '',
+    load: async () => {
+      /* Iconify 全量 JSON（字节跳动官方图形，SVG body 内嵌） */
+      const d = await fetchJson('https://unpkg.com/@iconify/json@latest/json/icon-park.json');
+      const icons = d.icons || {};
+      const names = Object.keys(icons).sort();
+      if (!names.length) throw new Error('empty icon-park');
+      const bodies = {};
+      names.forEach((n) => { bodies[n] = icons[n].body || ''; });
+      return { names, bodies };
+    },
+    svgOf: (name, data) => {
+      const body = (data.bodies && data.bodies[name]) || '';
+      if (!body) return '';
+      /* #000 描边跟随主题色，保留 IconPark 特色品牌蓝 #2F88FF */
+      return `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">${body.replace(/stroke="#000"/g, 'stroke="currentColor"')}</svg>`;
+    },
+    react: (name) => `import { ${pascal(name)} } from '@icon-park/react';\n\n<${pascal(name)} />`,
+  },
 };
 
 /* ---------- 组件代码模板（React/Vue，与 Web 端同逻辑） ---------- */
@@ -826,6 +855,8 @@ async function get(name, { lib: libId } = {}) {
           } catch (_) {
             out.svg = '(failed to fetch SVG source)';
           }
+        } else if (lib.svgOf) {
+          out.svg = lib.svgOf(name, data) || '(no svg body)';
         } else if (lib.usage) {
           out.svg = lib.usage(name, null, data);
         }
@@ -846,7 +877,7 @@ async function get(name, { lib: libId } = {}) {
 
 /* ---------- CLI ---------- */
 function printUsage() {
-  console.log(`IconGallery CLI - 18 图标库搜索与检索
+  console.log(`IconGallery CLI - 19 图标库搜索与检索
 
 Usage:
   node ig.js list                    列出所有支持的图标库

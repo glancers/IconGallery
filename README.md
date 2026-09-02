@@ -1,6 +1,6 @@
 # IconGallery
 
-图标选型工作台 —— 单个 HTML 文件，聚合 18 个主流图标库，为项目选型图标用。同时是一个可安装到 AI Agent（Trae、Codex、ClaudeCode、OpenClaw、Hermes 等）的 Skill，Agent 可通过 CLI 直接搜索和获取图标，无需打开浏览器。
+图标选型工作台 —— 单个 HTML 文件，聚合 19 个主流图标库，为项目选型图标用。同时是一个可安装到 AI Agent（Trae、Codex、ClaudeCode、OpenClaw、Hermes 等）的 Skill，Agent 可通过 CLI 直接搜索和获取图标，无需打开浏览器。
 
 ## 使用方法
 
@@ -45,6 +45,7 @@ python3 -m http.server 8123
 | Iconoir | 1383 | 手工线性，线条 / 实心 |
 | Flowbite Icons | 442 | Tailwind 生态，线条 / 实心 |
 | Devicons | 578 | 技术品牌 Logo（彩色） |
+| IconPark | 2658 | 字节跳动，多彩双色 |
 
 图标数据实时从各库官方 CDN 拉取，数量以页面显示为准，与官网同步。
 

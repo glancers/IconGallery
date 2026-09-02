@@ -1,11 +1,11 @@
 ---
 name: "icon-gallery"
-description: "Search and retrieve icons from 18 major icon libraries. Invoke when user needs icons, asks to find an icon, or requests SVG/CDN usage for a specific icon."
+description: "Search and retrieve icons from 19 major icon libraries. Invoke when user needs icons, asks to find an icon, or requests SVG/CDN usage for a specific icon."
 ---
 
 # IconGallery Skill
 
-You have access to a CLI tool for searching and retrieving icons from 18 major libraries.
+You have access to a CLI tool for searching and retrieving icons from 19 major libraries.
 
 ## How to Use
 
@@ -64,7 +64,7 @@ Invoke this skill when the user:
 
 - Lucide, Tabler, Remix, Phosphor, Bootstrap, Material Symbols
 - Font Awesome, MDI, Heroicons, Ionicons, Boxicons
-- Octicons, Ant Design Icons, Feather, MingCute, Iconoir, Flowbite, Devicons
+- Octicons, Ant Design Icons, Feather, MingCute, Iconoir, Flowbite, Devicons, IconPark
 
 ## Examples
 

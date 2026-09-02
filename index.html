@@ -697,6 +697,25 @@ function flowbiteUrl(name){
   return 'https://cdn.jsdelivr.net/npm/flowbite-icons@latest/src/' + (state.flow === 'solid' ? 'solid' : 'outline') + '/' + encodeURIComponent((st.cat && st.cat[name]) || 'others') + '/' + encodeURIComponent(name) + '.svg';
 }
 
+/* IconPark：Iconify 全量 JSON（字节跳动，2,600+ 双色图标，SVG body 内嵌数据直接渲染） */
+async function loadIconPark(){
+  const d = await (await fetch('https://unpkg.com/@iconify/json@latest/json/icon-park.json')).json();
+  const icons = d.icons || {};
+  const names = Object.keys(icons).sort();
+  if(!names.length) throw new Error('empty icon-park');
+  const bodies = {};
+  names.forEach(n => { bodies[n] = icons[n].body || ''; });
+  return { names, bodies };
+}
+function iconparkSVG(name){
+  const st = store.iconpark;
+  const body = (st && st.bodies && st.bodies[name]) || '';
+  if(!body) return '';
+  /* #000 描边跟随主题色，保留 IconPark 特色品牌蓝 #2F88FF */
+  const b = body.replace(/stroke="#000"/g, 'stroke="currentColor"');
+  return '<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%">' + b + '</svg>';
+}
+
 /* ================= 配置 ================= */
 const PH_BASE = { thin:'ph-thin', light:'ph-light', regular:'ph', bold:'ph-bold', fill:'ph-fill', duotone:'ph-duotone' };
 const PH_CSS = ['regular','thin','light','bold','fill','duotone'].map(w => 'https://unpkg.com/@phosphor-icons/web@2.1.1/src/' + w + '/style.css');
@@ -721,6 +740,7 @@ const LIBS = [
   { id:'iconoir',   label:'Iconoir',           desc:'1300+ 手工线性',    site:'https://iconoir.com',          accent:'#d946ef', css:[], svgFetch:true, load:loadIconoir },
   { id:'flowbite',  label:'Flowbite Icons',    desc:'Tailwind 生态',     site:'https://flowbite.com/icons',   accent:'#1c64f2', css:[], svgFetch:true, load:loadFlowbite },
   { id:'devicons',  label:'Devicons',          desc:'技术品牌 Logo',     site:'https://devicon.dev',          accent:'#f06595', css:[], svgFetch:true, load:loadDevicons },
+  { id:'iconpark', label:'IconPark',          desc:'字节跳动 · 多彩双色', site:'https://iconpark.oceanengine.com', accent:'#2F88FF', css:[], load:loadIconPark },
 ];
 const LIB_MAP = Object.fromEntries(LIBS.map(l => [l.id, l]));
 
@@ -745,6 +765,7 @@ const SAMPLE = {
   iconoir: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
   flowbite: '<svg viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4"><path fill-rule="evenodd" d="M13 2a1 1 0 1 0-2 0v1.5a.5.5 0 0 1-.5.5H9a1 1 0 0 0 0 2h1.5a.5.5 0 0 1 .5.5V10a1 1 0 1 0 2 0V6.5a.5.5 0 0 1 .5-.5H15a1 1 0 1 0 0-2h-1.5a.5.5 0 0 1-.5-.5V2ZM7 11a1 1 0 0 1 1 1v.5a.5.5 0 0 0 .5.5H9a1 1 0 1 1 0 2h-.5a.5.5 0 0 0-.5.5V16a1 1 0 1 1-2 0v-.5a.5.5 0 0 0-.5-.5H5a1 1 0 1 1 0-2h.5a.5.5 0 0 0 .5-.5V12a1 1 0 0 1 1-1Zm9 2a1 1 0 0 1 1 1v.5a.5.5 0 0 0 .5.5h.5a1 1 0 1 1 0 2h-.5a.5.5 0 0 0-.5.5v.5a1 1 0 1 1-2 0v-.5a.5.5 0 0 0-.5-.5H14a1 1 0 1 1 0-2h.5a.5.5 0 0 0 .5-.5V14a1 1 0 0 1 1-1Z" clip-rule="evenodd"/></svg>',
   devicons: '<svg viewBox="0 0 24 24" class="w-4 h-4"><path fill="#61dafb" d="M12 2l2.4 6.3 6.7.3-5.2 4.2 1.8 6.5L12 15.8l-5.7 3.5 1.8-6.5L2.9 8.6l6.7-.3L12 2z"/></svg>',
+  iconpark: '<svg viewBox="0 0 48 48" class="w-4 h-4"><g fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path fill="#2F88FF" d="M24 4l6 12 13 2-9.5 9L36 40l-12-6-12 6 2.5-13L4 18l13-2z"/></g></svg>',
 };
 
 const COLORS = ['#ef4444','#f97316','#f59e0b','#22c55e','#14b8a6','#0ea5e9','#6366f1','#8b5cf6','#ec4899','#64748b'];
@@ -1313,6 +1334,7 @@ function glyphHTML(lib, name){
     case 'mingcute':     return '<span class="lucide-holder" data-svgurl="' + mingcuteUrl(name) + '" data-svgfill="1" data-svgstrip="1"><span class="sk"></span></span>';
     case 'iconoir':     return '<span class="lucide-holder" data-svgurl="' + iconoirUrl(name) + '"><span class="sk"></span></span>';
     case 'flowbite':    return '<span class="lucide-holder" data-svgurl="' + flowbiteUrl(name) + '" data-svgfill="1"><span class="sk"></span></span>';
+    case 'iconpark':   return iconparkSVG(name);
   }
   return '';
 }
@@ -1456,6 +1478,7 @@ function reactCode(lib, name){
     case 'antd':      return "import { " + P + ({ outlined:'Outlined', filled:'Filled', twotone:'TwoTone' }[state.antd]) + " } from '@ant-design/icons';\n\n<" + P + ({ outlined:'Outlined', filled:'Filled', twotone:'TwoTone' }[state.antd]) + " />";
     case 'iconoir':   return "import { " + P + " } from '@iconoir/react';\n\n<" + P + " width=\"24\" height=\"24\" />";
     case 'phosphor':  return "import { " + P + " } from '@phosphor-icons/react';\n\n<" + P + " size={24} />";
+    case 'iconpark': return "import { " + P + " } from '@icon-park/react';\n\n<" + P + " />";
     default: return '';
   }
 }
@@ -1591,6 +1614,10 @@ async function openDetail(name){
     let svg = '';
     try{ svg = await getSvg(flowbiteUrl(name), true); }catch(e){}
     rows.push(['名称', name]);
+    if(svg) rows.push(['SVG 代码', svg]);
+  }else if(lib === 'iconpark'){
+    rows.push(['名称', name]);
+    const svg = iconparkSVG(name);
     if(svg) rows.push(['SVG 代码', svg]);
   }
   mRows.innerHTML = '';
