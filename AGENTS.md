@@ -34,7 +34,20 @@ node skill/ig.js search "save" --lib lucide
 node skill/ig.js search "home" --limit 10 --json
 ```
 
-### 3. 获取图标 SVG 代码
+### 3. 随机图标（找灵感）
+```bash
+node skill/ig.js random
+node skill/ig.js random --lib lucide --limit 8
+```
+
+### 4. 找同类图标（跨库召回）
+基于词元 + 同义词匹配，在全部图标库中查找与参考图标相似的图标。
+```bash
+node skill/ig.js similar "trash"
+node skill/ig.js similar "user" --lib lucide --limit 10
+```
+
+### 5. 获取图标 SVG 代码
 ```bash
 node skill/ig.js get "trash"
 node skill/ig.js get "home" --lib lucide

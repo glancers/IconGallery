@@ -236,42 +236,23 @@ const LIBS = {
     name: 'Font Awesome',
     site: 'https://fontawesome.com/icons',
     css: 'https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@latest/css/all.min.css',
+    /* FA7 CSS 改用 .fa-xxx{--fa:".."} 定义，旧正则失配；改用官方 metadata（与 Web 端一致） */
     load: async () => {
-      const css = await fetchText(
-        'https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@latest/css/all.min.css'
+      const meta = await fetchJson(
+        'https://cdn.jsdelivr.net/gh/FortAwesome/Font-Awesome@6.x/metadata/icons.json'
       );
-      const skip = new Set([
-        'xs', 'sm', 'md', 'lg', 'xl', '1x', '2x', '3x', '4x', '5x', '6x', '7x', '8x', '9x', '10x',
-        'spin', 'spin-reverse', 'spin-pulse', 'pulse', 'bounce', 'shake', 'beat', 'fade', 'fade-in',
-        'fade-out', 'flip', 'flip-horizontal', 'flip-vertical', 'fw', 'fixed-width', 'li', 'border',
-        'pull', 'pull-left', 'pull-right', 'stack', 'add', 'corner', 'primary', 'secondary',
-      ]);
-      const solid = new Set();
-      const regular = new Set();
-      const brands = new Set();
-      for (const m of css.matchAll(/fa-solid\s+fa-([a-z0-9-]+)/g)) {
-        if (!skip.has(m[1])) solid.add(m[1]);
-      }
-      for (const m of css.matchAll(/fa-regular\s+fa-([a-z0-9-]+)/g)) {
-        if (!skip.has(m[1])) regular.add(m[1]);
-      }
-      for (const m of css.matchAll(/fa-brands\s+fa-([a-z0-9-]+)/g)) {
-        if (!skip.has(m[1])) brands.add(m[1]);
-      }
-      // Fallback: also try matching just .fa- classes
-      if (solid.size === 0 && regular.size === 0 && brands.size === 0) {
-        for (const m of css.matchAll(/\.fa-([a-z0-9-]+)::?before/g)) {
-          if (!skip.has(m[1])) solid.add(m[1]);
-        }
-      }
+      const sets = { solid: [], regular: [], brands: [] };
+      Object.keys(meta).forEach((name) => {
+        (meta[name].styles || []).forEach((s) => {
+          if (sets[s]) sets[s].push(name);
+        });
+      });
+      Object.values(sets).forEach((a) => a.sort());
+      if (!sets.solid.length) throw new Error('parse failed');
       return {
-        names: [...new Set([...solid, ...regular, ...brands])].sort(),
+        names: [...new Set([...sets.solid, ...sets.regular, ...sets.brands])].sort(),
         tags: {},
-        sets: {
-          solid: [...solid].sort(),
-          regular: [...regular].sort(),
-          brands: [...brands].sort(),
-        },
+        sets,
       };
     },
     usage: (name, set) => {
@@ -339,16 +320,19 @@ const LIBS = {
         );
       }
       const files = tree.files || [];
-      const svgFiles = files.filter(
-        (f) => f.name && f.name.startsWith('/dist/collection/components/icon/assets/') && f.name.endsWith('.svg')
-      );
-      const names = svgFiles
-        .map((f) => f.name.split('/').pop().slice(0, -4))
-        .sort();
+      /* dist/svg 下是 filled.svg / xxx-outline.svg / xxx-sharp.svg，去掉风格后缀取基础名 */
+      const s = new Set();
+      for (const f of files) {
+        const m = f.name && f.name.match(/^\/dist\/svg\/([a-z0-9-]+)\.svg$/);
+        if (!m) continue;
+        const n = m[1];
+        s.add(n.endsWith('-outline') ? n.slice(0, -9) : n.endsWith('-sharp') ? n.slice(0, -6) : n);
+      }
+      const names = [...s].sort();
       return { names, tags: {}, version: ver };
     },
     svgUrl: (name, data) =>
-      `https://cdn.jsdelivr.net/npm/ionicons@${data.version}/dist/collection/components/icon/assets/${name}.svg`,
+      `https://cdn.jsdelivr.net/npm/ionicons@${data.version}/dist/svg/${name}.svg`,
     usage: (name) => `<ion-icon name="${name}"></ion-icon>`,
   },
 
@@ -699,7 +683,7 @@ function rankMatch(names, kws, tags) {
   return rankMatchGroups(names, [kws], tags);
 }
 
-function rankMatchGroups(names, groups, tags) {
+function rankMatchGroups(names, groups, tags, minScore = 1) {
   if (!groups.length) return [];
   const out = [];
   for (const n of names) {
@@ -707,6 +691,7 @@ function rankMatchGroups(names, groups, tags) {
     const t = tags[n];
     let total = 0;
     let groupHits = 0;
+    let strong = false;
     for (const g of groups) {
       let best = 0;
       for (let ki = 0; ki < g.length; ki++) {
@@ -715,12 +700,13 @@ function rankMatchGroups(names, groups, tags) {
         s -= ki * 0.01; /* 关键词顺序 = 意图优先级（词典把最贴切的词排前面） */
         if (s > best) best = s;
       }
+      if (best >= 70) strong = true;
       if (best > 0) {
         total += best;
         groupHits++;
       }
     }
-    if (groupHits === groups.length) {
+    if (groupHits === groups.length && (minScore <= 1 || strong)) {
       if (groups.length > 1) total += 50 * (groups.length - 1);
       total -= tokens.length * 0.5;
       out.push([n, total]);
@@ -875,6 +861,111 @@ async function get(name, { lib: libId } = {}) {
   return null;
 }
 
+/* ---------- random：随机图标（找灵感） ---------- */
+function randomPick(arr, n) {
+  const pool = [...arr];
+  const out = [];
+  while (out.length < n && pool.length) {
+    out.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
+  }
+  return out;
+}
+async function random({ lib: libId, limit = 5, json: asJson } = {}) {
+  const libsToPick = libId ? [libId] : Object.keys(LIBS);
+  const results = [];
+  for (const id of libsToPick) {
+    try {
+      const data = await loadLib(id);
+      const names = data.sets
+        ? [...new Set(Object.values(data.sets).flat())]
+        : data.names;
+      randomPick(names, Math.max(1, Math.ceil(limit / libsToPick.length))).forEach((name) => {
+        results.push({ library: id, name });
+      });
+    } catch (e) {
+      console.error(`Warning: failed to load ${id}: ${e.message}`);
+    }
+  }
+  const top = results.slice(0, limit);
+  if (asJson) return top;
+  if (!top.length) {
+    console.log('No icons available.');
+    return;
+  }
+  console.log(`Random ${top.length} icons:\n`);
+  const grouped = {};
+  top.forEach((r) => {
+    if (!grouped[r.library]) grouped[r.library] = [];
+    grouped[r.library].push(r.name);
+  });
+  for (const [lib, names] of Object.entries(grouped)) {
+    console.log(`  [${LIBS[lib].name}]`);
+    names.forEach((n) => console.log(`    ${n}`));
+    console.log();
+  }
+  console.log('Get details: node ig.js get <name> --lib <library-id>');
+}
+
+/* ---------- similar：找同类图标 ----------
+   以参考图标的词元为查询组（组内 OR），在各库召回同类 */
+async function similar(name, { lib: refLib, limit = 20, json: asJson } = {}) {
+  /* 找到参考图标所属库和词元 */
+  const libsToTry = refLib ? [refLib] : Object.keys(LIBS);
+  let refTokens = null, refLibId = null;
+  for (const id of libsToTry) {
+    try {
+      const data = await loadLib(id);
+      const names = data.sets
+        ? [...new Set(Object.values(data.sets).flat())]
+        : data.names;
+      if (names.includes(name)) {
+        refTokens = tokenize(name);
+        refLibId = id;
+        break;
+      }
+    } catch (_) { /* try next */ }
+  }
+  if (!refTokens) {
+    console.error(`Icon "${name}" not found${refLib ? ` in ${refLib}` : ''}.`);
+    process.exit(1);
+  }
+  /* 参考图标的词元 + 各词元的同义词 = 同类关键词组 */
+  const group = [...refTokens];
+  refTokens.forEach((t) => { if (EN_SYN[t]) group.push(...EN_SYN[t]); });
+  const results = [];
+  for (const id of Object.keys(LIBS)) {
+    try {
+      const data = await loadLib(id);
+      const names = data.sets
+        ? [...new Set(Object.values(data.sets).flat())]
+        : data.names;
+      const matched = rankMatchGroups(names, [group], data.tags || {}, 70);
+      matched.slice(0, limit).forEach((n) => {
+        if (n !== name) results.push({ library: id, name: n });
+      });
+    } catch (e) {
+      console.error(`Warning: failed to load ${id}: ${e.message}`);
+    }
+  }
+  const top = results.slice(0, limit);
+  if (asJson) return top;
+  if (!top.length) {
+    console.log(`No similar icons found for "${name}".`);
+    return;
+  }
+  console.log(`Similar to "${name}" (${LIBS[refLibId].name}, tokens: ${refTokens.join(' + ')}):\n`);
+  const grouped = {};
+  top.forEach((r) => {
+    if (!grouped[r.library]) grouped[r.library] = [];
+    grouped[r.library].push(r.name);
+  });
+  for (const [lib, names] of Object.entries(grouped)) {
+    console.log(`  [${LIBS[lib].name}]`);
+    names.forEach((n) => console.log(`    ${n}`));
+    console.log();
+  }
+}
+
 /* ---------- CLI ---------- */
 function printUsage() {
   console.log(`IconGallery CLI - 19 图标库搜索与检索
@@ -883,10 +974,12 @@ Usage:
   node ig.js list                    列出所有支持的图标库
   node ig.js search <query>          搜索图标（支持中文）
   node ig.js get <name>              获取图标 SVG 代码
+  node ig.js random                  随机图标（找灵感）
+  node ig.js similar <name>          找同类图标（跨库）
 
 Options:
   --lib <id>      限定图标库 (e.g., lucide, tabler)
-  --limit <N>     搜索结果数量（默认 20）
+  --limit <N>     结果数量（默认 search 20 / random 5）
   --json          以 JSON 格式输出
 
 Examples:
@@ -896,6 +989,9 @@ Examples:
   node ig.js search "天气" --lib phosphor
   node ig.js get "trash"
   node ig.js get "home" --lib lucide
+  node ig.js random --lib lucide --limit 8
+  node ig.js similar "trash"
+  node ig.js similar "user" --lib lucide --limit 10
 `);
 }
 
@@ -918,6 +1014,23 @@ async function main() {
     else if (a === '--limit') opts.limit = parseInt(rest[++i], 10);
     else if (a === '--json') opts.json = true;
     else positional.push(a);
+  }
+
+  if (cmd === 'random') {
+    if (!opts.lib && opts.limit === 20) opts.limit = 5;
+    const results = await random(opts);
+    if (opts.json && results) console.log(JSON.stringify(results, null, 2));
+    return;
+  }
+
+  if (cmd === 'similar') {
+    if (!positional.length) {
+      console.error('Error: similar requires an icon name');
+      process.exit(1);
+    }
+    const results = await similar(positional[0], opts);
+    if (opts.json && results) console.log(JSON.stringify(results, null, 2));
+    return;
   }
 
   if (cmd === 'list') {

@@ -114,7 +114,7 @@ html.dark .lib-item.active .lib-title{color:#a5b4fc}
 .chip.active{color:#6366f1;border-color:rgba(99,102,241,.5);background:rgba(99,102,241,.08);font-weight:500}
 
 /* ---------- 弹窗 / 代码行 / 提示 ---------- */
-.code-box{flex:1;min-width:0;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;line-height:1.6;padding:8px 10px;border-radius:8px;border:1px solid var(--card-bd);background:var(--code-bg);color:var(--label-h);outline:none;resize:none}
+.code-box{flex:1;min-width:0;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;line-height:1.5;padding:7px 10px;border-radius:8px;border:1px solid var(--card-bd);background:var(--code-bg);color:var(--label-h);outline:none;resize:none}
 .code-box:focus{border-color:rgba(99,102,241,.5)}
 .copy-btn{flex:none;width:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--label);border:1px solid var(--card-bd);background:var(--card-bg);cursor:pointer;transition:.15s}
 .copy-btn:hover{color:#6366f1;border-color:rgba(99,102,241,.5)}
@@ -1500,11 +1500,12 @@ function codeRow(label, value){
   wrap.innerHTML =
     '<div class="text-xs text-zinc-500 mb-1.5">' + label + '</div>' +
     '<div class="flex gap-2">' +
-      (multiline ? '<textarea readonly rows="7" class="code-box"></textarea>' : '<input readonly class="code-box">') +
+      (multiline ? '<textarea readonly rows="2" class="code-box"></textarea>' : '<input readonly class="code-box">') +
       '<button class="copy-btn" title="复制">' + I_COPY + '</button>' +
     '</div>';
   const field = wrap.querySelector('input,textarea');
   field.value = value;
+  if (field.tagName === 'TEXTAREA') field.rows = Math.min(Math.max(value.split('\n').length, 2), 12);
   field.addEventListener('focus', e => e.target.select());
   wrap.querySelector('.copy-btn').addEventListener('click', () => copyText(field.value));
   return wrap;

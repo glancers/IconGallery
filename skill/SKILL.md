@@ -37,7 +37,20 @@ cd <repo-root> && node skill/ig.js search "fj"
 - `--limit <N>`: Limit results (default: 20)
 - `--json`: Output raw JSON
 
-### 3. Get Icon SVG Code
+### 3. Random Icons (inspiration)
+```bash
+cd <repo-root> && node skill/ig.js random
+cd <repo-root> && node skill/ig.js random --lib lucide --limit 8
+```
+
+### 4. Similar Icons (cross-library recall)
+Finds icons similar to a reference icon (token + synonym matching across all libraries).
+```bash
+cd <repo-root> && node skill/ig.js similar "trash"
+cd <repo-root> && node skill/ig.js similar "user" --lib lucide --limit 10
+```
+
+### 5. Get Icon SVG Code
 Retrieves the raw SVG source and usage code for a specific icon.
 
 ```bash

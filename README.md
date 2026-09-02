@@ -1,6 +1,32 @@
 # IconGallery
 
+[![Live Demo](https://img.shields.io/badge/Live_Demo-GitHub_Pages-6366f1?logo=githubpages&logoColor=white)](https://glancers.github.io/IconGallery/)
+[![Libraries](https://img.shields.io/badge/Libraries-19-blue)](#收录图标库)
+[![Icons](https://img.shields.io/badge/Icons-30%2C000%2B-22c55e)](#收录图标库)
+[![Zero Build](https://img.shields.io/badge/Build-None-f59e0b)](#技术说明)
+[![License: MIT](https://img.shields.io/badge/License-MIT-8b5cf6)](#技术说明)
+[![Chinese Search](https://img.shields.io/badge/搜索-中文%20%2F%20拼音%20%2F%20同义词-ec4899)](#功能)
+
 图标选型工作台 —— 单个 HTML 文件，聚合 19 个主流图标库，为项目选型图标用。同时是一个可安装到 AI Agent（Trae、Codex、ClaudeCode、OpenClaw、Hermes 等）的 Skill，Agent 可通过 CLI 直接搜索和获取图标，无需打开浏览器。
+
+> **English** | [中文](#中文说明)
+
+An icon selection workbench in a **single HTML file** — 19 major icon libraries aggregated for project icon picking. Also installable as an AI **Agent Skill** (Trae, Codex, ClaudeCode, OpenClaw, Hermes...): agents search and fetch icons via a zero-dependency Node.js CLI, no browser needed.
+
+**Highlights**: Chinese/pinyin/synonym search · React/Vue component code · favorites with cross-library compare · shareable URL state · dark mode · lazy rendering of 30,000+ icons.
+
+```bash
+node skill/ig.js search "delete"     # synonym-aware English search
+node skill/ig.js search "删除"        # Chinese search
+node skill/ig.js random --lib lucide  # random icons for inspiration
+node skill/ig.js similar "trash"      # similar icons across libraries
+```
+
+[→ Full usage](#agent-skill-模式) · [→ Try it live](https://glancers.github.io/IconGallery/)
+
+---
+
+<a name="中文说明"></a>
 
 ## 使用方法
 
@@ -54,7 +80,8 @@ python3 -m http.server 8123
 - **中文搜索**：三级解析（980+ 条共享词典 → 拼音全拼/首字母 → MyMemory 免费翻译兜底），如「删除」「feiji」「fj」「挖掘机」均可命中
 - **英文语义搜索**：从词典反向构建同义词表（共现过滤），搜 `trash` 召回 delete / bin，搜 `user` 召回 person / shield
 - **评分排序**：图标名按词元切分（`-`/`_`/camelCase），精确命中 > 前缀 > tags > 子串；多概念组合查询（如「用户删除」）要求各概念同时命中（组间 AND、组内 OR），结果按相关性排序而非字母序
-- **关键词收窄**：中文搜索后，点关键词 chip 从宽召回切到精确过滤
+- **收藏对比**：心形收藏（本地持久化）→ 右下角收藏栏 → 跨库横向对比弹窗，选型不用靠脑子记
+- **链接分享**：当前库 / 搜索词 / 风格编码进 URL，点分享按钮复制链接，对方打开即同款视图
 - **预览调节**：尺寸 16–96px、10 种颜色 + 自定义取色、描边 / 字重 / 填充样式；侧栏库列表独立滚动，预览设置常驻底部不遮挡
 - **点击图标**：大图预览 + 16/24/32/48/64 多尺寸对照，一键复制名称、CSS 类名、HTML 用法、React / Vue 组件代码、CDN 引入语句、SVG 源码
 - **深浅主题**：右上角切换，所有偏好（库 / 尺寸 / 颜色 / 风格）自动记忆
@@ -86,7 +113,7 @@ git clone https://github.com/glancers/IconGallery.git
 # 列出所有支持的图标库
 node skill/ig.js list
 
-# 搜索图标（支持中英文）
+# 搜索图标（支持中英文 / 拼音 / 同义词）
 node skill/ig.js search "delete"
 node skill/ig.js search "删除"
 node skill/ig.js search "天气"
@@ -97,7 +124,15 @@ node skill/ig.js search "save" --lib lucide
 # 限制结果数量 / 输出 JSON
 node skill/ig.js search "home" --limit 10 --json
 
-# 获取 SVG 代码和用法
+# 随机图标（找灵感）
+node skill/ig.js random
+node skill/ig.js random --lib lucide --limit 8
+
+# 找同类图标（跨库召回）
+node skill/ig.js similar "trash"
+node skill/ig.js similar "user" --lib lucide --limit 10
+
+# 获取 SVG 代码和用法（HTML / React / Vue）
 node skill/ig.js get "trash"
 node skill/ig.js get "home" --lib lucide
 ```
