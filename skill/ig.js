@@ -456,9 +456,10 @@ function rankMatchGroups(names, groups, tags) {
     let groupHits = 0;
     for (const g of groups) {
       let best = 0;
-      for (const kw of g) {
-        let s = scoreName(kw, tokens);
-        if (!s && t && t.some((x) => x.includes(kw))) s = 40;
+      for (let ki = 0; ki < g.length; ki++) {
+        let s = scoreName(g[ki], tokens);
+        if (!s && t && t.some((x) => x.includes(g[ki]))) s = 40;
+        s -= ki * 0.01; /* 关键词顺序 = 意图优先级（词典把最贴切的词排前面） */
         if (s > best) best = s;
       }
       if (best > 0) {
