@@ -239,6 +239,34 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;
             <button data-v="regular">常规</button><button data-v="solid">实心</button><button data-v="logos">Logo</button>
           </div>
         </div>
+
+        <div data-ctl="antd">
+          <div class="text-xs text-zinc-500 mb-1.5">风格</div>
+          <div id="antd-seg" class="seg">
+            <button data-v="outlined">线条</button><button data-v="filled">填充</button><button data-v="twotone">双色</button>
+          </div>
+        </div>
+
+        <div data-ctl="mingcute">
+          <div class="text-xs text-zinc-500 mb-1.5">风格</div>
+          <div id="ming-seg" class="seg">
+            <button data-v="line">线条</button><button data-v="fill">填充</button>
+          </div>
+        </div>
+
+        <div data-ctl="iconoir">
+          <div class="text-xs text-zinc-500 mb-1.5">风格</div>
+          <div id="iconoir-seg" class="seg">
+            <button data-v="regular">线条</button><button data-v="solid">实心</button>
+          </div>
+        </div>
+
+        <div data-ctl="flowbite">
+          <div class="text-xs text-zinc-500 mb-1.5">风格</div>
+          <div id="flow-seg" class="seg">
+            <button data-v="outline">线条</button><button data-v="solid">实心</button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -508,13 +536,133 @@ function ioniconsUrl(name){
   return 'https://cdn.jsdelivr.net/npm/ionicons@' + ION_VER + '/dist/svg/' + encodeURIComponent(name + suffix) + '.svg';
 }
 
+/* Octicons：官方 metadata（name + keywords + heights，部分图标只有 16px） */
+async function loadOcticons(){
+  const ver = await jsdelivrLatest('@primer/octicons');
+  const data = await (await fetch('https://cdn.jsdelivr.net/npm/@primer/octicons@' + ver + '/build/data.json')).json();
+  const names = Object.keys(data).sort();
+  if(!names.length) throw new Error('empty octicons');
+  const tags = {}, heights = {};
+  names.forEach(n => {
+    if(data[n].keywords && data[n].keywords.length) tags[n] = data[n].keywords.map(k => String(k).toLowerCase());
+    /* heights 是 {'16':{...},'24':{...}} 对象，转成数字数组 */
+    heights[n] = data[n].heights ? Object.keys(data[n].heights).map(Number) : [24];
+  });
+  return { names, tags, heights };
+}
+function octiconsUrl(name){
+  const st = store.octicons || {};
+  const hs = (st.heights && st.heights[name]) || [24];
+  const h = hs.includes(24) ? 24 : (hs.includes(16) ? 16 : (hs[hs.length - 1] || 24));
+  return 'https://cdn.jsdelivr.net/npm/@primer/octicons@latest/build/svg/' + encodeURIComponent(name) + '-' + h + '.svg';
+}
+
+/* Devicons：官方 metadata（开发技术品牌图标，original 版本带品牌色） */
+async function loadDevicons(){
+  const arr = await (await fetch('https://cdn.jsdelivr.net/npm/devicon@latest/devicon.json')).json();
+  const names = [], tags = {}, vers = {};
+  arr.forEach(d => {
+    names.push(d.name);
+    if(d.tags && d.tags.length) tags[d.name] = d.tags.map(t => String(t).toLowerCase());
+    /* versions 是 {svg:[...], font:[...]}，部分品牌只有 plain 无 original */
+    const vs = (d.versions && d.versions.svg) || [];
+    vers[d.name] = vs.includes('original') ? 'original' : (vs.includes('plain') ? 'plain' : (vs[vs.length - 1] || 'original'));
+  });
+  if(!names.length) throw new Error('empty devicon');
+  return { names: names.sort(), tags, vers };
+}
+function deviconsUrl(name){
+  const st = store.devicons || {};
+  const v = (st.vers && st.vers[name]) || 'original';
+  return 'https://cdn.jsdelivr.net/npm/devicon@latest/icons/' + encodeURIComponent(name) + '/' + encodeURIComponent(name) + '-' + v + '.svg';
+}
+
+/* Feather Icons：SVG 文件树 */
+async function loadFeather(){
+  const files = await flatTree('feather-icons', await jsdelivrLatest('feather-icons'));
+  const names = files.filter(f => /^\/dist\/icons\/[a-z0-9-]+\.svg$/.test(f.name)).map(f => f.name.slice(12, -4)).sort();
+  if(!names.length) throw new Error('empty feather');
+  return { names };
+}
+function featherUrl(name){
+  return 'https://cdn.jsdelivr.net/npm/feather-icons@latest/dist/icons/' + encodeURIComponent(name) + '.svg';
+}
+
+/* Ant Design Icons：SVG 文件树（outlined / filled / twotone） */
+async function loadAntDesign(){
+  const files = await flatTree('@ant-design/icons-svg', await jsdelivrLatest('@ant-design/icons-svg'));
+  const sets = { outlined:new Set(), filled:new Set(), twotone:new Set() };
+  files.forEach(f => {
+    const m = f.name.match(/^\/inline-svg\/(outlined|filled|twotone)\/([a-z0-9-]+)\.svg$/);
+    if(m) sets[m[1]].add(m[2]);
+  });
+  const out = {};
+  Object.keys(sets).forEach(k => out[k] = [...sets[k]].sort());
+  if(!out.outlined.length) throw new Error('empty antd');
+  return { sets: out };
+}
+function antdUrl(name){
+  return 'https://cdn.jsdelivr.net/npm/@ant-design/icons-svg@latest/inline-svg/' + state.antd + '/' + encodeURIComponent(name) + '.svg';
+}
+
+/* MingCute：SVG 文件树（fill / line，按分类子目录） */
+async function loadMingCute(){
+  const files = await flatTree('mingcute_icon', await jsdelivrLatest('mingcute_icon'));
+  const fill = new Set(), line = new Set(), cat = {};
+  files.forEach(f => {
+    const m = f.name.match(/^\/svg\/([^/]+)\/([a-z0-9-]+)_(fill|line)\.svg$/);
+    if(!m) return;
+    (m[3] === 'fill' ? fill : line).add(m[2]);
+    cat[m[2]] = m[1];
+  });
+  if(!line.size) throw new Error('empty mingcute');
+  return { sets: { fill:[...fill].sort(), line:[...line].sort() }, cat };
+}
+function mingcuteUrl(name){
+  const st = store.mingcute || {};
+  return 'https://cdn.jsdelivr.net/npm/mingcute_icon@latest/svg/' + encodeURIComponent((st.cat && st.cat[name]) || 'others') + '/' + encodeURIComponent(name) + '_' + (state.ming === 'fill' ? 'fill' : 'line') + '.svg';
+}
+
+/* Iconoir：SVG 文件树（regular / solid） */
+async function loadIconoir(){
+  const files = await flatTree('iconoir', await jsdelivrLatest('iconoir'));
+  const regular = new Set(), solid = new Set();
+  files.forEach(f => {
+    const m = f.name.match(/^\/icons\/(regular|solid)\/([a-z0-9-]+)\.svg$/);
+    if(m) (m[1] === 'solid' ? solid : regular).add(m[2]);
+  });
+  if(!regular.size) throw new Error('empty iconoir');
+  return { sets: { regular:[...regular].sort(), solid:[...solid].sort() } };
+}
+function iconoirUrl(name){
+  return 'https://cdn.jsdelivr.net/npm/iconoir@latest/icons/' + state.iconoir + '/' + encodeURIComponent(name) + '.svg';
+}
+
+/* Flowbite Icons：SVG 文件树（outline / solid，分类目录名含冒号需编码） */
+async function loadFlowbite(){
+  const files = await flatTree('flowbite-icons', await jsdelivrLatest('flowbite-icons'));
+  const outline = new Set(), solid = new Set(), cat = {};
+  files.forEach(f => {
+    const m = f.name.match(/^\/src\/(outline|solid)\/([^/]+)\/([a-z0-9-]+)\.svg$/);
+    if(!m) return;
+    (m[1] === 'solid' ? solid : outline).add(m[3]);
+    cat[m[3]] = m[2];
+  });
+  if(!outline.size) throw new Error('empty flowbite');
+  return { sets: { outline:[...outline].sort(), solid:[...solid].sort() }, cat };
+}
+function flowbiteUrl(name){
+  const st = store.flowbite || {};
+  return 'https://cdn.jsdelivr.net/npm/flowbite-icons@latest/src/' + (state.flow === 'solid' ? 'solid' : 'outline') + '/' + encodeURIComponent((st.cat && st.cat[name]) || 'others') + '/' + encodeURIComponent(name) + '.svg';
+}
+
 /* ================= 配置 ================= */
 const PH_BASE = { thin:'ph-thin', light:'ph-light', regular:'ph', bold:'ph-bold', fill:'ph-fill', duotone:'ph-duotone' };
 const PH_CSS = ['regular','thin','light','bold','fill','duotone'].map(w => 'https://unpkg.com/@phosphor-icons/web@2.1.1/src/' + w + '/style.css');
 const GOOGLE_MS_CSS = 'https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200';
 
 const LIBS = [
-  { id:'lucide',    label:'Lucide',           desc:'线性 · 描边可调',   site:'https://lucide.dev',          accent:'#6366f1', css:[], load:loadLucide },
+  { id:'lucide',    label:'Lucide',           desc:'线性 · 描边可调',   site:'https://lucide.dev',          accent:'#6366f1', css:[], svgFetch:true, load:loadLucide },
   { id:'tabler',    label:'Tabler Icons',     desc:'线性 + 填充',       site:'https://tabler.io/icons',      accent:'#0ea5e9', css:['https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css'], load:loadTabler },
   { id:'remix',     label:'Remix Icon',       desc:'线条 / 填充',       site:'https://remixicon.com',        accent:'#8b5cf6', css:['https://cdn.jsdelivr.net/npm/remixicon@latest/fonts/remixicon.css'], load:loadRemix },
   { id:'phosphor',  label:'Phosphor',         desc:'六种字重',          site:'https://phosphoricons.com',    accent:'#22c55e', css:PH_CSS, load:loadPhosphor },
@@ -522,9 +670,16 @@ const LIBS = [
   { id:'material',  label:'Material Symbols', desc:'可变字体 · 圆角',    site:'https://fonts.google.com/icons', accent:'#f59e0b', css:[GOOGLE_MS_CSS], load:loadMaterial },
   { id:'fontawesome', label:'Font Awesome',   desc:'免费版 · 三种风格',  site:'https://fontawesome.com/icons', accent:'#339af0', css:['https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@latest/css/all.min.css'], load:loadFontAwesome },
   { id:'mdi',       label:'MDI',              desc:'7000+ · 社区版填充', site:'https://pictogrammers.com/library/mdi/', accent:'#2196f3', css:['https://cdn.jsdelivr.net/npm/@mdi/font@latest/css/materialdesignicons.min.css'], load:loadMDI },
-  { id:'heroicons', label:'Heroicons',         desc:'Tailwind 官方',     site:'https://heroicons.com',        accent:'#38bdf8', css:[], load:loadHeroicons },
-  { id:'ionicons',  label:'Ionicons',          desc:'Ionic 团队 · 三风格', site:'https://ionic.io/ionicons', accent:'#4f8df7', css:[], load:loadIonicons },
+  { id:'heroicons', label:'Heroicons',         desc:'Tailwind 官方',     site:'https://heroicons.com',        accent:'#38bdf8', css:[], svgFetch:true, load:loadHeroicons },
+  { id:'ionicons',  label:'Ionicons',          desc:'Ionic 团队 · 三风格', site:'https://ionic.io/ionicons', accent:'#4f8df7', css:[], svgFetch:true, load:loadIonicons },
   { id:'boxicons',  label:'Boxicons',          desc:'常规 / 实心 / Logo', site:'https://boxicons.com',        accent:'#0d9488', css:['https://cdn.jsdelivr.net/npm/boxicons@latest/css/boxicons.min.css'], load:loadBoxicons },
+  { id:'octicons',  label:'Octicons',          desc:'GitHub 官方',       site:'https://primer.style/foundations/icons', accent:'#8a919f', css:[], svgFetch:true, load:loadOcticons },
+  { id:'antd',      label:'Ant Design Icons',  desc:'蚂蚁 · 三风格',      site:'https://ant.design/components/icon', accent:'#1677ff', css:[], svgFetch:true, load:loadAntDesign },
+  { id:'feather',   label:'Feather Icons',     desc:'Lucide 前身 · 极简', site:'https://feathericons.com',     accent:'#a3e635', css:[], svgFetch:true, load:loadFeather },
+  { id:'mingcute',  label:'MingCute Icon',    desc:'国人出品 · 精致',    site:'https://www.mingcute.com',      accent:'#ffcd00', css:[], svgFetch:true, load:loadMingCute },
+  { id:'iconoir',   label:'Iconoir',           desc:'1300+ 手工线性',    site:'https://iconoir.com',          accent:'#d946ef', css:[], svgFetch:true, load:loadIconoir },
+  { id:'flowbite',  label:'Flowbite Icons',    desc:'Tailwind 生态',     site:'https://flowbite.com/icons',   accent:'#1c64f2', css:[], svgFetch:true, load:loadFlowbite },
+  { id:'devicons',  label:'Devicons',          desc:'技术品牌 Logo',     site:'https://devicon.dev',          accent:'#f06595', css:[], svgFetch:true, load:loadDevicons },
 ];
 const LIB_MAP = Object.fromEntries(LIBS.map(l => [l.id, l]));
 
@@ -542,6 +697,13 @@ const SAMPLE = {
   heroicons: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.562.562 0 0 0-.586 0L6.982 20.54a.562.562 0 0 1-.84-.61l1.285-5.386a.562.562 0 0 0-.182-.557l-4.204-3.602a.562.562 0 0 1 .321-.988l5.518-.442a.563.563 0 0 0 .475-.345L11.48 3.5Z"/></svg>',
   ionicons: '<svg viewBox="0 0 512 512" fill="currentColor" class="w-4 h-4"><path d="M394 480a16 16 0 01-9.39-3L256 383.76 127.39 477a16 16 0 01-24.55-18.08L153 310.35 23 221.2a16 16 0 019-29.2h160.38l48.4-148.95a16 16 0 0130.44 0l48.4 149H480a16 16 0 019.05 29.2L359 310.35l50.13 148.53A16 16 0 01394 480z"/></svg>',
   boxicons: '<i class="bx bx-star"></i>',
+  octicons: '<svg viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4"><path d="M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.751.751 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Z"/></svg>',
+  antd: '<svg viewBox="0 0 1024 1024" fill="currentColor" class="w-4 h-4"><path d="M858.9 409L530.5 174.6a38.7 38.7 0 0 0-42.5-0.2L160.6 408.3c-12.5 8.4-19.3 22.7-19.3 37v168.8c0 15.5 8.2 29.8 21.6 37.7l328.4 191.4a44.3 44.3 0 0 0 44.6-0.1l322.9-190.6a44.7 44.7 0 0 0 21.7-38.5V446.9c0-15.1-7.7-29.1-20.6-37.9z"/></svg>',
+  feather: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
+  mingcute: '<svg viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4"><path d="M12 2c.3 0 .6.14.8.4l3 4.2 4.9 1.4c.6.2.9.9.5 1.5l-3 4.4.6 5.2c.1.6-.4 1.2-1 1.2-.1 0-.3 0-.4-.1L12 18.6l-4.9 1.9c-.6.2-1.2-.2-1.3-.8l-.1-.4.6-5.2-3-4.4c-.4-.6-.1-1.3.5-1.5l4.9-1.4 3-4.2c.2-.26.5-.4.8-.4Z"/></svg>',
+  iconoir: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
+  flowbite: '<svg viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4"><path fill-rule="evenodd" d="M13 2a1 1 0 1 0-2 0v1.5a.5.5 0 0 1-.5.5H9a1 1 0 0 0 0 2h1.5a.5.5 0 0 1 .5.5V10a1 1 0 1 0 2 0V6.5a.5.5 0 0 1 .5-.5H15a1 1 0 1 0 0-2h-1.5a.5.5 0 0 1-.5-.5V2ZM7 11a1 1 0 0 1 1 1v.5a.5.5 0 0 0 .5.5H9a1 1 0 1 1 0 2h-.5a.5.5 0 0 0-.5.5V16a1 1 0 1 1-2 0v-.5a.5.5 0 0 0-.5-.5H5a1 1 0 1 1 0-2h.5a.5.5 0 0 0 .5-.5V12a1 1 0 0 1 1-1Zm9 2a1 1 0 0 1 1 1v.5a.5.5 0 0 0 .5.5h.5a1 1 0 1 1 0 2h-.5a.5.5 0 0 0-.5.5v.5a1 1 0 1 1-2 0v-.5a.5.5 0 0 0-.5-.5H14a1 1 0 1 1 0-2h.5a.5.5 0 0 0 .5-.5V14a1 1 0 0 1 1-1Z" clip-rule="evenodd"/></svg>',
+  devicons: '<svg viewBox="0 0 24 24" class="w-4 h-4"><path fill="#61dafb" d="M12 2l2.4 6.3 6.7.3-5.2 4.2 1.8 6.5L12 15.8l-5.7 3.5 1.8-6.5L2.9 8.6l6.7-.3L12 2z"/></svg>',
 };
 
 const COLORS = ['#ef4444','#f97316','#f59e0b','#22c55e','#14b8a6','#0ea5e9','#6366f1','#8b5cf6','#ec4899','#64748b'];
@@ -552,11 +714,11 @@ const I_ALERT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stro
 const I_EMPTY = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" class="w-10 h-10"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/><path d="m8 8 6 6M14 8l-6 6"/></svg>';
 
 /* ================= 状态 ================= */
-let state = { lib:'lucide', query:'', tagFilter:'', size:40, color:'', stroke:2, remix:'line', ph:'regular', msFill:0, msWght:400, fa:'solid', bx:'regular', hi:'outline', ion:'filled' };
+let state = { lib:'lucide', query:'', tagFilter:'', size:40, color:'', stroke:2, remix:'line', ph:'regular', msFill:0, msWght:400, fa:'solid', bx:'regular', hi:'outline', ion:'filled', antd:'outlined', ming:'line', iconoir:'regular', flow:'outline' };
 try{
   const s = JSON.parse(localStorage.getItem('ig:state') || '{}');
   if(LIB_MAP[s.lib]) state.lib = s.lib;
-  ['size','stroke','remix','ph','msFill','msWght','color','fa','bx','hi','ion'].forEach(k => { if(s[k] !== undefined) state[k] = s[k]; });
+  ['size','stroke','remix','ph','msFill','msWght','color','fa','bx','hi','ion','antd','ming','iconoir','flow'].forEach(k => { if(s[k] !== undefined) state[k] = s[k]; });
 }catch(e){}
 function saveState(){ try{ localStorage.setItem('ig:state', JSON.stringify(state)); }catch(e){} }
 
@@ -575,19 +737,21 @@ const svgCache = new Map();
 function lucideUrl(name){
   return 'https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/' + encodeURIComponent(name) + '.svg';
 }
-async function getSvg(url, injectFill){
-  const key = url + (injectFill ? '#f' : '');
+async function getSvg(url, injectFill, stripFill){
+  const key = url + (injectFill ? '#f' : '') + (stripFill ? '#s' : '');
   if(svgCache.has(key)) return svgCache.get(key);
   let t = (await fetchText(url)).replace(/<\?xml[^>]*>/, '').trim();
   /* ionicons 的 svg 默认无颜色，需补 currentColor 才能跟随主题 */
   if(injectFill) t = t.replace('<svg ', '<svg fill="currentColor" ');
+  /* 部分库（如 MingCute）内嵌写死的品牌色，清洗为 currentColor */
+  if(stripFill) t = t.replace(/fill="#[0-9a-fA-F]{3,8}"/g, 'fill="currentColor"');
   svgCache.set(key, t);
   return t;
 }
 function fillSlots(root){
   root.querySelectorAll('[data-svgurl]:not([data-loaded])').forEach(async h => {
     h.dataset.loaded = '1';
-    try{ h.innerHTML = await getSvg(h.dataset.svgurl, h.dataset.svgfill === '1'); }catch(e){}
+    try{ h.innerHTML = await getSvg(h.dataset.svgurl, h.dataset.svgfill === '1', h.dataset.svgstrip === '1'); }catch(e){}
   });
 }
 
@@ -872,6 +1036,10 @@ function activeNames(){
   if(state.lib === 'boxicons') return st.sets[state.bx] || [];
   if(state.lib === 'heroicons') return st.sets[state.hi] || [];
   if(state.lib === 'ionicons') return st.sets[state.ion] || [];
+  if(state.lib === 'antd') return st.sets[state.antd] || [];
+  if(state.lib === 'mingcute') return st.sets[state.ming] || [];
+  if(state.lib === 'iconoir') return st.sets[state.iconoir] || [];
+  if(state.lib === 'flowbite') return st.sets[state.flow] || [];
   return st.names;
 }
 /* 图标名切词元：按 - _ . 空格切，camelCase 也要拆开 */
@@ -972,6 +1140,13 @@ function glyphHTML(lib, name){
     }
     case 'heroicons':   return '<span class="lucide-holder" data-svgurl="' + heroiconsUrl(name) + '"><span class="sk"></span></span>';
     case 'ionicons':    return '<span class="lucide-holder" data-svgurl="' + ioniconsUrl(name) + '" data-svgfill="1"><span class="sk"></span></span>';
+    case 'octicons':    return '<span class="lucide-holder" data-svgurl="' + octiconsUrl(name) + '" data-svgfill="1"><span class="sk"></span></span>';
+    case 'devicons':    return '<span class="lucide-holder" data-svgurl="' + deviconsUrl(name) + '"><span class="sk"></span></span>';
+    case 'feather':     return '<span class="lucide-holder" data-svgurl="' + featherUrl(name) + '"><span class="sk"></span></span>';
+    case 'antd':        return '<span class="lucide-holder" data-svgurl="' + antdUrl(name) + '" data-svgfill="1"><span class="sk"></span></span>';
+    case 'mingcute':     return '<span class="lucide-holder" data-svgurl="' + mingcuteUrl(name) + '" data-svgfill="1" data-svgstrip="1"><span class="sk"></span></span>';
+    case 'iconoir':     return '<span class="lucide-holder" data-svgurl="' + iconoirUrl(name) + '"><span class="sk"></span></span>';
+    case 'flowbite':    return '<span class="lucide-holder" data-svgurl="' + flowbiteUrl(name) + '" data-svgfill="1"><span class="sk"></span></span>';
   }
   return '';
 }
@@ -997,11 +1172,11 @@ function renderGrid(){
 function appendChunk(){
   const list = filtered();
   if(rendered >= list.length){ updateEnd(); return; }
-  const CHUNK = (state.lib === 'lucide' || state.lib === 'heroicons' || state.lib === 'ionicons') ? 120 : 240;
+  const CHUNK = LIB_MAP[state.lib].svgFetch ? 120 : 240;
   const slice = list.slice(rendered, rendered + CHUNK);
   grid.insertAdjacentHTML('beforeend', slice.map(n => cardHTML(n)).join(''));
   rendered += slice.length;
-  if(state.lib === 'lucide' || state.lib === 'heroicons' || state.lib === 'ionicons') fillSlots(grid);
+  if(LIB_MAP[state.lib].svgFetch) fillSlots(grid);
   updateCountUI(); updateEnd();
 }
 function updateEnd(){
@@ -1186,6 +1361,48 @@ async function openDetail(name){
     rows.push(['名称', name]);
     rows.push(['Web 组件', '<ion-icon name="' + name + '"></ion-icon>']);
     if(svg) rows.push(['SVG 代码', svg]);
+  }else if(lib === 'octicons'){
+    let svg = '';
+    try{ svg = await getSvg(octiconsUrl(name), true); }catch(e){}
+    rows.push(['名称', name]);
+    rows.push(['React 组件', "import { " + pascal(name) + "Icon } from '@primer/octicons-react'"]);
+    if(svg) rows.push(['SVG 代码', svg]);
+  }else if(lib === 'devicons'){
+    let svg = '';
+    try{ svg = await getSvg(deviconsUrl(name)); }catch(e){}
+    rows.push(['名称', name]);
+    rows.push(['图片用法', '<img src="' + deviconsUrl(name) + '" width="24" alt="' + name + '">']);
+    if(svg) rows.push(['SVG 代码', svg]);
+  }else if(lib === 'feather'){
+    let svg = '';
+    try{ svg = await getSvg(featherUrl(name)); }catch(e){}
+    rows.push(['名称', name]);
+    rows.push(['HTML 用法', '<i data-feather="' + name + '"></i>']);
+    rows.push(['CDN 引入', '<script src="https://cdn.jsdelivr.net/npm/feather-icons"><\/script>']);
+    if(svg) rows.push(['SVG 代码', svg]);
+  }else if(lib === 'antd'){
+    let svg = '';
+    try{ svg = await getSvg(antdUrl(name), true); }catch(e){}
+    const suffix = { outlined:'Outlined', filled:'Filled', twotone:'TwoTone' }[state.antd];
+    rows.push(['名称', name]);
+    rows.push(['React 组件', "import { " + pascal(name) + suffix + " } from '@ant-design/icons'"]);
+    if(svg) rows.push(['SVG 代码', svg]);
+  }else if(lib === 'mingcute'){
+    let svg = '';
+    try{ svg = await getSvg(mingcuteUrl(name), true, true); }catch(e){}
+    rows.push(['名称', name]);
+    if(svg) rows.push(['SVG 代码', svg]);
+  }else if(lib === 'iconoir'){
+    let svg = '';
+    try{ svg = await getSvg(iconoirUrl(name)); }catch(e){}
+    rows.push(['名称', name]);
+    rows.push(['React 组件', "import { " + pascal(name) + " } from '@iconoir/react'"]);
+    if(svg) rows.push(['SVG 代码', svg]);
+  }else if(lib === 'flowbite'){
+    let svg = '';
+    try{ svg = await getSvg(flowbiteUrl(name), true); }catch(e){}
+    rows.push(['名称', name]);
+    if(svg) rows.push(['SVG 代码', svg]);
   }
   mRows.innerHTML = '';
   rows.forEach(r => mRows.appendChild(codeRow(r[0], r[1])));
@@ -1295,6 +1512,10 @@ bindSeg($('#fa-seg'), 'fa', renderGrid);
 bindSeg($('#hi-seg'), 'hi', renderGrid);
 bindSeg($('#ion-seg'), 'ion', renderGrid);
 bindSeg($('#bx-seg'), 'bx', renderGrid);
+bindSeg($('#antd-seg'), 'antd', renderGrid);
+bindSeg($('#ming-seg'), 'ming', renderGrid);
+bindSeg($('#iconoir-seg'), 'iconoir', renderGrid);
+bindSeg($('#flow-seg'), 'flow', renderGrid);
 
 /* ================= 搜索 / 主题 / 抽屉 / 快捷键 ================= */
 const kwBar = $('#kw-bar'), kwChips = $('#kw-chips');

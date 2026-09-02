@@ -1,6 +1,6 @@
 # IconGallery
 
-图标选型工作台 —— 单个 HTML 文件，聚合 11 个主流图标库，为项目选型图标用。同时是一个可安装到 AI Agent（Trae、Codex、ClaudeCode、OpenClaw、Hermes 等）的 Skill，Agent 可通过 CLI 直接搜索和获取图标，无需打开浏览器。
+图标选型工作台 —— 单个 HTML 文件，聚合 18 个主流图标库，为项目选型图标用。同时是一个可安装到 AI Agent（Trae、Codex、ClaudeCode、OpenClaw、Hermes 等）的 Skill，Agent 可通过 CLI 直接搜索和获取图标，无需打开浏览器。
 
 ## 使用方法
 
@@ -38,6 +38,13 @@ python3 -m http.server 8123
 | Heroicons | 324 × 3 | Tailwind 官方，线条 / 实心 / 迷你 |
 | Ionicons | 921 × 3 | 填充 / 线条 / 棱角 |
 | Boxicons | 1100+ | 常规 / 实心 / 品牌 Logo |
+| Octicons | 384 | GitHub 官方，自动匹配 16/24px |
+| Ant Design Icons | 447 × 3 | 蚂蚁出品，线条 / 填充 / 双色 |
+| Feather Icons | 287 | Lucide 前身，极简线性 |
+| MingCute Icon | 684 | 国人出品，精致线条 / 填充 |
+| Iconoir | 1383 | 手工线性，线条 / 实心 |
+| Flowbite Icons | 442 | Tailwind 生态，线条 / 实心 |
+| Devicons | 578 | 技术品牌 Logo（彩色） |
 
 图标数据实时从各库官方 CDN 拉取，数量以页面显示为准，与官网同步。
 

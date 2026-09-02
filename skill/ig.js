@@ -65,6 +65,21 @@ async function translateZh2En(q) {
 /* ---------- Library loaders ---------- */
 const cache = {};
 
+/* jsDelivr 工具：解析 latest 版本号 + 拉平文件树 */
+async function jsdelivrLatest(pkg) {
+  const meta = await fetchJson(`https://data.jsdelivr.com/v1/packages/npm/${pkg}`);
+  return (meta.tags && meta.tags.latest) || meta.versions[meta.versions.length - 1];
+}
+async function flatTree(pkg, ver) {
+  let tree;
+  try {
+    tree = await fetchJson(`https://data.jsdelivr.com/v1/packages/npm/${pkg}@${ver}?structure=flat`);
+  } catch (_) {
+    tree = await fetchJson(`https://data.jsdelivr.com/v1/packages/npm/${pkg}@${ver}`);
+  }
+  return tree.files || [];
+}
+
 /* ---------- Library definitions ---------- */
 const LIBS = {
   lucide: {
@@ -100,8 +115,8 @@ const LIBS = {
       } catch (_) {}
       return { names, tags, version: ver };
     },
-    svgUrl: (name, ver) =>
-      `https://cdn.jsdelivr.net/npm/lucide-static@${ver}/icons/${name}.svg`,
+    svgUrl: (name, data) =>
+      `https://cdn.jsdelivr.net/npm/lucide-static@${data.version}/icons/${name}.svg`,
     css: 'https://cdn.jsdelivr.net/npm/lucide-static@latest/dist/fonts/lucide.css',
     usage: (name) =>
       `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M..."/></svg>`,
@@ -293,8 +308,8 @@ const LIBS = {
       )].sort();
       return { names, tags: {}, version: ver };
     },
-    svgUrl: (name, ver) =>
-      `https://cdn.jsdelivr.net/npm/@heroicons/react@${ver}/24/outline/${name.replace(/-([a-z])/g, (_, c) => c.toUpperCase())}Icon.js`,
+    svgUrl: (name, data) =>
+      `https://cdn.jsdelivr.net/npm/@heroicons/react@${data.version}/24/outline/${name.replace(/-([a-z])/g, (_, c) => c.toUpperCase())}Icon.js`,
     react: (name) => `import { ${name.replace(/-([a-z])/g, (_, c) => c.toUpperCase())}Icon } from '@heroicons/react/24/outline';\n\n<${name.replace(/-([a-z])/g, (_, c) => c.toUpperCase())}Icon />`,
   },
 
@@ -326,8 +341,8 @@ const LIBS = {
         .sort();
       return { names, tags: {}, version: ver };
     },
-    svgUrl: (name, ver) =>
-      `https://cdn.jsdelivr.net/npm/ionicons@${ver}/dist/collection/components/icon/assets/${name}.svg`,
+    svgUrl: (name, data) =>
+      `https://cdn.jsdelivr.net/npm/ionicons@${data.version}/dist/collection/components/icon/assets/${name}.svg`,
     usage: (name) => `<ion-icon name="${name}"></ion-icon>`,
   },
 
@@ -344,6 +359,165 @@ const LIBS = {
       return { names: [...s].sort(), tags: {} };
     },
     usage: (name) => `<i class="bx bx-${name}"></i>`,
+  },
+
+  octicons: {
+    name: 'Octicons',
+    site: 'https://primer.style/foundations/icons',
+    css: '',
+    load: async () => {
+      const ver = await jsdelivrLatest('@primer/octicons');
+      const data = await fetchJson(`https://cdn.jsdelivr.net/npm/@primer/octicons@${ver}/build/data.json`);
+      const names = Object.keys(data).sort();
+      const tags = {}, heights = {};
+      names.forEach((n) => {
+        if (data[n].keywords && data[n].keywords.length)
+          tags[n] = data[n].keywords.map((k) => String(k).toLowerCase());
+        /* heights 是 {'16':{...},'24':{...}} 对象，转成数字数组 */
+        heights[n] = data[n].heights ? Object.keys(data[n].heights).map(Number) : [24];
+      });
+      return { names, tags, heights, version: ver };
+    },
+    svgUrl: (name, data) => {
+      const hs = (data.heights && data.heights[name]) || [24];
+      const h = hs.includes(24) ? 24 : hs.includes(16) ? 16 : hs[hs.length - 1] || 24;
+      return `https://cdn.jsdelivr.net/npm/@primer/octicons@${data.version}/build/svg/${name}-${h}.svg`;
+    },
+    react: (name) => `import { ${name.replace(/-([a-z])/g, (_, c) => c.toUpperCase())}Icon } from '@primer/octicons-react';`,
+  },
+
+  antd: {
+    name: 'Ant Design Icons',
+    site: 'https://ant.design/components/icon',
+    css: '',
+    load: async () => {
+      const ver = await jsdelivrLatest('@ant-design/icons-svg');
+      const files = await flatTree('@ant-design/icons-svg', ver);
+      const sets = { outlined: new Set(), filled: new Set(), twotone: new Set() };
+      files.forEach((f) => {
+        const m = f.name.match(/^\/inline-svg\/(outlined|filled|twotone)\/([a-z0-9-]+)\.svg$/);
+        if (m) sets[m[1]].add(m[2]);
+      });
+      const out = {};
+      Object.keys(sets).forEach((k) => (out[k] = [...sets[k]].sort()));
+      return { names: [...new Set(Object.values(sets).reduce((a, s) => a.concat([...s]), []))].sort(), tags: {}, sets: out };
+    },
+    svgUrl: (name) =>
+      `https://cdn.jsdelivr.net/npm/@ant-design/icons-svg@latest/inline-svg/outlined/${name}.svg`,
+    react: (name) => `import { ${name.replace(/-([a-z])/g, (_, c) => c.toUpperCase())}Outlined } from '@ant-design/icons';`,
+  },
+
+  feather: {
+    name: 'Feather Icons',
+    site: 'https://feathericons.com',
+    css: '',
+    load: async () => {
+      const files = await flatTree('feather-icons', await jsdelivrLatest('feather-icons'));
+      const names = files
+        .filter((f) => /^\/dist\/icons\/[a-z0-9-]+\.svg$/.test(f.name))
+        .map((f) => f.name.slice(12, -4))
+        .sort();
+      return { names, tags: {} };
+    },
+    svgUrl: (name) =>
+      `https://cdn.jsdelivr.net/npm/feather-icons@latest/dist/icons/${name}.svg`,
+    usage: (name) => `<i data-feather="${name}"></i>`,
+  },
+
+  mingcute: {
+    name: 'MingCute Icon',
+    site: 'https://www.mingcute.com',
+    css: '',
+    load: async () => {
+      const files = await flatTree('mingcute_icon', await jsdelivrLatest('mingcute_icon'));
+      const fill = new Set(), line = new Set(), cat = {};
+      files.forEach((f) => {
+        const m = f.name.match(/^\/svg\/([^/]+)\/([a-z0-9-]+)_(fill|line)\.svg$/);
+        if (!m) return;
+        (m[3] === 'fill' ? fill : line).add(m[2]);
+        cat[m[2]] = m[1];
+      });
+      return {
+        names: [...new Set([...line, ...fill])].sort(),
+        tags: {},
+        sets: { line: [...line].sort(), fill: [...fill].sort() },
+        cat,
+      };
+    },
+    svgUrl: (name, data) =>
+      `https://cdn.jsdelivr.net/npm/mingcute_icon@latest/svg/${((data.cat && data.cat[name]) || 'others')}/${name}_line.svg`,
+  },
+
+  iconoir: {
+    name: 'Iconoir',
+    site: 'https://iconoir.com',
+    css: '',
+    load: async () => {
+      const files = await flatTree('iconoir', await jsdelivrLatest('iconoir'));
+      const regular = new Set(), solid = new Set();
+      files.forEach((f) => {
+        const m = f.name.match(/^\/icons\/(regular|solid)\/([a-z0-9-]+)\.svg$/);
+        if (m) (m[1] === 'solid' ? solid : regular).add(m[2]);
+      });
+      return {
+        names: [...new Set([...regular, ...solid])].sort(),
+        tags: {},
+        sets: { regular: [...regular].sort(), solid: [...solid].sort() },
+      };
+    },
+    svgUrl: (name) =>
+      `https://cdn.jsdelivr.net/npm/iconoir@latest/icons/regular/${name}.svg`,
+    react: (name) => `import { ${name.replace(/-([a-z])/g, (_, c) => c.toUpperCase())} } from '@iconoir/react';`,
+  },
+
+  flowbite: {
+    name: 'Flowbite Icons',
+    site: 'https://flowbite.com/icons',
+    css: '',
+    load: async () => {
+      const files = await flatTree('flowbite-icons', await jsdelivrLatest('flowbite-icons'));
+      const outline = new Set(), solid = new Set(), cat = {};
+      files.forEach((f) => {
+        const m = f.name.match(/^\/src\/(outline|solid)\/([^/]+)\/([a-z0-9-]+)\.svg$/);
+        if (!m) return;
+        (m[1] === 'solid' ? solid : outline).add(m[3]);
+        cat[m[3]] = m[2];
+      });
+      return {
+        names: [...new Set([...outline, ...solid])].sort(),
+        tags: {},
+        sets: { outline: [...outline].sort(), solid: [...solid].sort() },
+        cat,
+      };
+    },
+    svgUrl: (name, data) =>
+      `https://cdn.jsdelivr.net/npm/flowbite-icons@latest/src/outline/${((data.cat && data.cat[name]) || 'others')}/${name}.svg`,
+  },
+
+  devicons: {
+    name: 'Devicons',
+    site: 'https://devicon.dev',
+    css: '',
+    load: async () => {
+      const arr = await fetchJson('https://cdn.jsdelivr.net/npm/devicon@latest/devicon.json');
+      const names = [], tags = {}, vers = {};
+      arr.forEach((d) => {
+        names.push(d.name);
+        if (d.tags && d.tags.length) tags[d.name] = d.tags.map((t) => String(t).toLowerCase());
+        /* versions 是 {svg:[...], font:[...]}，部分品牌只有 plain 无 original */
+        const vs = (d.versions && d.versions.svg) || [];
+        vers[d.name] = vs.includes('original')
+          ? 'original'
+          : vs.includes('plain')
+            ? 'plain'
+            : vs[vs.length - 1] || 'original';
+      });
+      return { names: names.sort(), tags, vers };
+    },
+    svgUrl: (name, data) =>
+      `https://cdn.jsdelivr.net/npm/devicon@latest/icons/${name}/${name}-${((data.vers && data.vers[name]) || 'original')}.svg`,
+    usage: (name, _set, data) =>
+      `<img src="https://cdn.jsdelivr.net/npm/devicon@latest/icons/${name}/${name}-${((data && data.vers && data.vers[name]) || 'original')}.svg" width="24" alt="${name}">`,
   },
 };
 
@@ -539,7 +713,7 @@ async function search(query, { lib: libId, limit = 20, json: asJson } = {}) {
     try {
       const data = await loadLib(id);
       const names = data.sets
-        ? [...new Set([...(data.sets.line || []), ...(data.sets.fill || []), ...(data.sets.solid || []), ...(data.sets.regular || []), ...(data.sets.brands || [])])].sort()
+        ? [...new Set(Object.values(data.sets).flat())].sort()
         : data.names;
       const matched = filterNames(names, data.tags || {}, query, null, groupsOverride);
       matched.slice(0, limit).forEach((name) => {
@@ -583,7 +757,7 @@ async function get(name, { lib: libId } = {}) {
     try {
       const data = await loadLib(id);
       const names = data.sets
-        ? [...new Set([...(data.sets.line || []), ...(data.sets.fill || []), ...(data.sets.solid || []), ...(data.sets.regular || []), ...(data.sets.brands || [])])].sort()
+        ? [...new Set(Object.values(data.sets).flat())].sort()
         : data.names;
       if (names.includes(name)) {
         const lib = LIBS[id];
@@ -593,14 +767,14 @@ async function get(name, { lib: libId } = {}) {
           name,
           cdn: lib.css || '(none - inline SVG only)',
         };
-        if (data.svgUrl && data.version) {
+        if (data.svgUrl) {
           try {
-            out.svg = await fetchText(data.svgUrl(name, data.version));
+            out.svg = await fetchText(data.svgUrl(name, data));
           } catch (_) {
             out.svg = '(failed to fetch SVG source)';
           }
         } else if (lib.usage) {
-          out.svg = lib.usage(name);
+          out.svg = lib.usage(name, null, data);
         }
         if (lib.react) out.react = lib.react(name);
         else out.html = lib.usage ? lib.usage(name) : '';
@@ -615,7 +789,7 @@ async function get(name, { lib: libId } = {}) {
 
 /* ---------- CLI ---------- */
 function printUsage() {
-  console.log(`IconGallery CLI - 11 图标库搜索与检索
+  console.log(`IconGallery CLI - 18 图标库搜索与检索
 
 Usage:
   node ig.js list                    列出所有支持的图标库
