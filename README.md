@@ -1,6 +1,6 @@
 # IconGallery
 
-图标选型工作台 —— 单个 HTML 文件，聚合 11 个主流图标库，为项目选型图标用。
+图标选型工作台 —— 单个 HTML 文件，聚合 11 个主流图标库，为项目选型图标用。同时是一个可安装到 AI Agent（Trae、Codex、ClaudeCode、OpenClaw、Hermes 等）的 Skill，Agent 可通过 CLI 直接搜索和获取图标，无需打开浏览器。
 
 ## 使用方法
 
@@ -27,26 +27,26 @@ python3 -m http.server 8123
 
 | 图标库 | 数量 | 特色 |
 |---|---|---|
-| Lucide | 1600+ | 线性风格，描边粗细可调 |
+| Lucide | 2000+ | 线性风格，描边粗细可调 |
 | Tabler Icons | 5000+ | 线性 + 填充 |
-| Remix Icon | 3000+ | 线条 / 填充双风格 |
-| Phosphor | 9000+ | 六种字重（细 / 轻 / 常规 / 粗 / 填充 / 双色） |
+| Remix Icon | 1500+ | 线条 / 填充双风格 |
+| Phosphor | 1500+ × 6 字重 | 细 / 轻 / 常规 / 粗 / 填充 / 双色 |
 | Bootstrap Icons | 2000+ | 经典通用 |
 | Material Symbols | 4200+ | 可变字体，填充开关 + 字重滑杆 |
 | Font Awesome | 1895（免费版） | 实心 / 常规 / 品牌三风格 |
 | MDI | 7400+ | Material Design 社区版 |
-| Heroicons | 324×3 | Tailwind 官方，线条 / 实心 / 迷你 |
-| Ionicons | 1300×3 | 填充 / 线条 / 棱角 |
-| Boxicons | 1600+ | 常规 / 实心 / 品牌 Logo |
+| Heroicons | 324 × 3 | Tailwind 官方，线条 / 实心 / 迷你 |
+| Ionicons | 921 × 3 | 填充 / 线条 / 棱角 |
+| Boxicons | 1100+ | 常规 / 实心 / 品牌 Logo |
 
-图标数据实时从各库官方 CDN 拉取，数量与官网同步。
+图标数据实时从各库官方 CDN 拉取，数量以页面显示为准，与官网同步。
 
 ## 功能
 
 - **中文搜索**：三级解析（920+ 条共享词典 → 拼音全拼/首字母 → MyMemory 免费翻译兜底），如「删除」「feiji」「fj」「挖掘机」均可命中
 - **评分排序**：图标名按词元切分（`-`/`_`/camelCase），精确命中 > 前缀 > tags > 子串；多概念组合查询（如「用户删除」）要求各概念同时命中（组间 AND、组内 OR），结果按相关性排序而非字母序
 - **关键词收窄**：中文搜索后，点关键词 chip 从宽召回切到精确过滤
-- **预览调节**：尺寸 16–96px、10 种颜色 + 自定义取色、描边 / 字重 / 填充样式
+- **预览调节**：尺寸 16–96px、10 种颜色 + 自定义取色、描边 / 字重 / 填充样式；侧栏库列表独立滚动，预览设置常驻底部不遮挡
 - **点击图标**：大图预览 + 16/24/32/48/64 多尺寸对照，一键复制名称、CSS 类名、HTML 用法、CDN 引入语句、SVG 源码
 - **深浅主题**：右上角切换，所有偏好（库 / 尺寸 / 颜色 / 风格）自动记忆
 - **懒加载**：分块渲染，数千图标滚动流畅
@@ -56,11 +56,20 @@ python3 -m http.server 8123
 
 IconGallery 同时是一个可安装到 AI Agent（Codex、ClaudeCode、OpenClaw、Hermes 等）的 Skill。Agent 可以通过 CLI 命令搜索和获取图标，无需打开浏览器。
 
-### 一键安装
+### 安装
 
-1. 将本仓库克隆或复制到项目中
-2. 在 Agent 的配置目录中创建指向 `AGENTS.md` 或 `.trae/skills/icon-gallery/SKILL.md` 的引用
-3. 确保 `skill/ig.js` 文件可执行
+1. 将仓库克隆到本地（确保 `skill/ig.js` 可用，仅需 Node.js，零依赖）：
+
+```bash
+git clone https://github.com/glancers/IconGallery.git
+```
+
+2. 把下面这段话复制给你的 Agent 即可启用：
+
+```text
+请阅读并遵循 IconGallery/skill/SKILL.md 中的 IconGallery Skill 定义。
+之后我提到找图标 / 需要 SVG / 推荐图标时，按其中的 CLI 协议调用 node IconGallery/skill/ig.js 执行。
+```
 
 ### CLI 使用
 
@@ -76,6 +85,9 @@ node skill/ig.js search "天气"
 # 限定图标库
 node skill/ig.js search "save" --lib lucide
 
+# 限制结果数量 / 输出 JSON
+node skill/ig.js search "home" --limit 10 --json
+
 # 获取 SVG 代码和用法
 node skill/ig.js get "trash"
 node skill/ig.js get "home" --lib lucide
@@ -84,15 +96,15 @@ node skill/ig.js get "home" --lib lucide
 ### 目录结构
 
 ```
-icon/
-├── .trae/skills/icon-gallery/SKILL.md   # Trae Skill 定义
-├── AGENTS.md                            # 通用 Agent 定义
+IconGallery/
+├── AGENTS.md               # 通用 Agent Skill 定义
 ├── skill/
-│   ├── ig.js                            # CLI 核心脚本
-│   └── zh-index.json                    # 共享中文词典（920+ 条）
-├── index.html                           # Web 界面
-├── screenshots/                         # 截图
-└── README.md                            # 本文件
+│   ├── ig.js               # CLI 核心脚本（纯 Node.js，零依赖）
+│   ├── SKILL.md            # 可移植 Skill 定义（相对路径）
+│   └── zh-index.json       # 共享中文词典（920+ 条）
+├── index.html              # Web 界面（单文件）
+├── screenshots/            # 截图
+└── README.md               # 本文件
 ```
 
 ## 技术说明

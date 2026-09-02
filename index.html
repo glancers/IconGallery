@@ -130,7 +130,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;
 
   <!-- ================= 侧栏 ================= -->
   <aside id="sidebar" class="w-64 shrink-0 flex flex-col border-r border-zinc-200 dark:border-zinc-800/70 bg-white dark:bg-zinc-900/40">
-    <a href="https://github.com/glancers/IconGallery" target="_blank" rel="noopener" title="GitHub 仓库：glancers/IconGallery" class="px-4 h-16 border-b border-zinc-200/70 dark:border-zinc-800/70 flex items-center gap-2.5 cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800/30 transition rounded-none">
+    <div class="hidden lg:flex px-4 h-16 border-b border-zinc-200/70 dark:border-zinc-800/70 items-center gap-2.5">
       <svg viewBox="0 0 24 24" class="w-7 h-7 text-zinc-700 dark:text-zinc-300" aria-hidden="true">
         <rect x="2" y="2" width="9" height="9" rx="2.5" fill="#6366f1"/>
         <rect x="13" y="2" width="9" height="9" rx="2.5" fill="#a78bfa"/>
@@ -139,13 +139,24 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;
       </svg>
       <div class="min-w-0">
         <div class="font-semibold text-[15px] leading-tight">IconGallery</div>
-        <div class="text-[11px] text-zinc-400 flex items-center gap-1 leading-tight">
-          <svg viewBox="0 0 24 24" fill="currentColor" class="w-3 h-3" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.55 0-.27-.01-1.17-.02-2.12-3.2.7-3.88-1.36-3.88-1.36-.52-1.33-1.28-1.68-1.28-1.68-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.19 1.76 1.19 1.03 1.76 2.69 1.25 3.35.96.1-.75.4-1.25.72-1.54-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.8 1.19 1.83 1.19 3.09 0 4.42-2.7 5.39-5.27 5.68.41.36.78 1.05.78 2.12 0 1.54-.01 2.77-.01 3.15 0 .3.2.67.8.55C20.21 21.38 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5Z"/></svg>
-          glancers/IconGallery
-        </div>
+        <div class="text-[11px] text-zinc-400 leading-tight">图标选型工作台</div>
       </div>
-      <button id="drawer-close" class="lg:hidden ml-auto w-8 h-8 rounded-lg text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-lg leading-none" aria-label="关闭侧栏" onclick="event.preventDefault(); event.stopPropagation();">×</button>
-    </a>
+    </div>
+
+    <!-- 移动端抽屉头部 -->
+    <div class="lg:hidden relative px-4 h-16 border-b border-zinc-200/70 dark:border-zinc-800/70 flex items-center gap-2.5">
+      <svg viewBox="0 0 24 24" class="w-7 h-7 text-zinc-700 dark:text-zinc-300" aria-hidden="true">
+        <rect x="2" y="2" width="9" height="9" rx="2.5" fill="#6366f1"/>
+        <rect x="13" y="2" width="9" height="9" rx="2.5" fill="#a78bfa"/>
+        <rect x="2" y="13" width="9" height="9" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.6"/>
+        <rect x="13" y="13" width="9" height="9" rx="2.5" fill="#8b5cf6"/>
+      </svg>
+      <div class="min-w-0">
+        <div class="font-semibold text-[15px] leading-tight">IconGallery</div>
+        <div class="text-[11px] text-zinc-400 leading-tight">图标选型工作台</div>
+      </div>
+      <button id="drawer-close" class="ml-auto w-8 h-8 rounded-lg text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-lg leading-none" aria-label="关闭侧栏" onclick="event.preventDefault(); event.stopPropagation();">×</button>
+    </div>
 
     <div class="flex-1 min-h-0 flex flex-col px-3 py-4">
       <div class="shrink-0 px-2 pb-2 text-[11px] font-medium text-zinc-400 tracking-widest">图标库</div>
@@ -231,8 +242,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;
       </div>
     </div>
 
-    <div class="px-4 py-3 border-t border-zinc-200/70 dark:border-zinc-800/70 text-[11px] text-zinc-400 leading-relaxed">
-      数据来自各图标库官方 CDN，仅用于预览选型。
+    <div class="px-4 pt-3 pb-3.5 border-t border-zinc-200/70 dark:border-zinc-800/70">
+      <p class="text-[11px] text-zinc-400 leading-relaxed">数据版本来自各图标库官方 CDN，仅用于预览选型</p>
     </div>
   </aside>
 
@@ -253,9 +264,12 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;
         <kbd id="kbd-hint" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-mono text-zinc-400 border border-zinc-200 dark:border-zinc-700 rounded px-1.5 py-0.5 pointer-events-none">/</kbd>
       </div>
 
-      <div id="count" class="text-xs font-mono text-zinc-400 tabular-nums whitespace-nowrap"></div>
+      <a href="https://github.com/glancers/IconGallery" target="_blank" rel="noopener" title="GitHub 仓库：glancers/IconGallery" class="ml-auto h-8 px-1 flex items-center gap-1.5 text-xs font-medium text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-100 transition">
+        <svg viewBox="0 0 24 24" fill="currentColor" class="w-3.5 h-3.5" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.55 0-.27-.01-1.17-.02-2.12-3.2.7-3.88-1.36-3.88-1.36-.52-1.33-1.28-1.68-1.28-1.68-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.19 1.76 1.19 1.03 1.76 2.69 1.25 3.35.96.1-.75.4-1.25.72-1.54-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.8 1.19 1.83 1.19 3.09 0 4.42-2.7 5.39-5.27 5.68.41.36.78 1.05.78 2.12 0 1.54-.01 2.77-.01 3.15 0 .3.2.67.8.55C20.21 21.38 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5Z"/></svg>
+        <span class="hidden sm:inline">glancers/IconGallery</span>
+      </a>
 
-      <button id="theme-btn" class="ml-auto h-9 pl-2 pr-2.5 rounded-full border border-zinc-200 dark:border-zinc-800 flex items-center gap-1 text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-100 hover:border-zinc-300 dark:hover:border-zinc-700 transition" aria-label="切换主题">
+      <button id="theme-btn" class="h-9 pl-2 pr-2.5 rounded-full border border-zinc-200 dark:border-zinc-800 flex items-center gap-1 text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-100 hover:border-zinc-300 dark:hover:border-zinc-700 transition" aria-label="切换主题">
         <span id="icon-sun" class="inline-flex items-center gap-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="w-4 h-4"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg><span class="text-xs font-medium">明亮</span></span>
         <span id="icon-moon" class="hidden"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg><span class="text-xs font-medium">黑暗</span></span>
       </button>
@@ -549,7 +563,7 @@ function saveState(){ try{ localStorage.setItem('ig:state', JSON.stringify(state
 /* ================= DOM ================= */
 const grid = $('#grid'), sentinel = $('#sentinel'), endNote = $('#end-note');
 const statePanel = $('#state-panel'), panelIcon = $('#panel-icon'), panelMsg = $('#panel-msg'), reloadBtn = $('#reload-btn');
-const searchEl = $('#search'), clearBtn = $('#clear-search'), kbdHint = $('#kbd-hint'), countEl = $('#count');
+const searchEl = $('#search'), clearBtn = $('#clear-search'), kbdHint = $('#kbd-hint');
 const contentEl = $('#content'), libList = $('#lib-list'), chipBar = $('#chip-bar');
 const headTitle = $('#lib-title'), headDesc = $('#lib-desc'), headLink = $('#lib-site');
 const modal = $('#modal'), mName = $('#m-name'), mLib = $('#m-lib'), mPreview = $('#m-preview'), mSizes = $('#m-sizes'), mRows = $('#m-rows');
@@ -1001,10 +1015,7 @@ function updateEnd(){
     endNote.classList.add('ig-hide');
   }
 }
-function updateCountUI(){
-  const list = filtered(), total = activeNames().length, q = state.query.trim();
-  countEl.textContent = q ? list.length.toLocaleString() + ' / ' + total.toLocaleString() : total.toLocaleString();
-}
+function updateCountUI(){}
 function updateHead(){
   const lib = LIB_MAP[state.lib], st = store[state.lib];
   headTitle.innerHTML = '<span class="inline-block w-2 h-2 rounded-full mr-1.5 align-middle" style="background:' + lib.accent + '"></span>' + lib.label;
@@ -1419,6 +1430,14 @@ buildChips();
 buildSwatches();
 applyVars();
 updateThemeIcon();
+
+/* 侧栏星形预览：立即填充字形并预注入全部 CSS，字体在后台并行下载，不等待库数据加载 */
+LIBS.forEach(lib => injectCss(lib.id));
+LIBS.forEach(lib => {
+  const gl = document.querySelector('[data-glyph="' + lib.id + '"]');
+  if(gl && !gl.dataset.filled){ gl.innerHTML = SAMPLE[lib.id]; gl.dataset.filled = '1'; }
+});
+
 selectLib(state.lib);
 
 })();
