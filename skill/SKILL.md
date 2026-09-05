@@ -1,11 +1,11 @@
 ---
 name: "icon-gallery"
-description: "Search and retrieve icons from 19 major icon libraries. Invoke when user needs icons, asks to find an icon, or requests SVG/CDN usage for a specific icon."
+description: "Search, compare, and retrieve icons from 28 major icon libraries. Invoke when the user needs icons, asks to find similar options, or requests SVG/CDN/framework usage for a specific icon."
 ---
 
 # IconGallery Skill
 
-You have access to a CLI tool for searching and retrieving icons from 19 major libraries.
+You have access to a zero-dependency CLI tool for searching and retrieving icons from 28 major libraries.
 
 ## How to Use
 
@@ -37,7 +37,7 @@ cd <repo-root> && node skill/ig.js search "fj"
 - `--limit <N>`: Limit results (default: 20)
 - `--json`: Output raw JSON
 
-### 3. Random Icons (inspiration)
+### 3. Random Icons (Inspiration)
 ```bash
 cd <repo-root> && node skill/ig.js random
 cd <repo-root> && node skill/ig.js random --lib lucide --limit 8
@@ -78,6 +78,8 @@ Invoke this skill when the user:
 - Lucide, Tabler, Remix, Phosphor, Bootstrap, Material Symbols
 - Font Awesome, MDI, Heroicons, Ionicons, Boxicons
 - Octicons, Ant Design Icons, Feather, MingCute, Iconoir, Flowbite, Devicons, IconPark
+- Hugeicons, Solar Icons, Carbon Icons, Radix Icons, Circle Flags
+- Game Icons, Simple Icons, CSS.gg, Weather Icons
 
 ## Examples
 
@@ -89,3 +91,6 @@ Invoke this skill when the user:
 
 **User**: "What's the SVG for lucide 'home'?"
 **Action**: Run get → `node skill/ig.js get "home" --lib lucide`
+
+**User**: "给我几个和 trash 类似的图标"
+**Action**: Run similar → `node skill/ig.js similar "trash"` → Present cross-library alternatives

@@ -1,17 +1,17 @@
 # IconGallery
 
 [![Live Demo](https://img.shields.io/badge/Live_Demo-GitHub_Pages-6366f1?logo=githubpages&logoColor=white)](https://glancers.github.io/IconGallery/)
-[![Libraries](https://img.shields.io/badge/Libraries-19-blue)](#收录图标库)
+[![Libraries](https://img.shields.io/badge/Libraries-28-blue)](#收录图标库)
 [![Icons](https://img.shields.io/badge/Icons-30%2C000%2B-22c55e)](#收录图标库)
 [![Zero Build](https://img.shields.io/badge/Build-None-f59e0b)](#技术说明)
 [![License: MIT](https://img.shields.io/badge/License-MIT-8b5cf6)](#技术说明)
 [![Chinese Search](https://img.shields.io/badge/搜索-中文%20%2F%20拼音%20%2F%20同义词-ec4899)](#功能)
 
-图标选型工作台 —— 单个 HTML 文件，聚合 19 个主流图标库，为项目选型图标用。同时是一个可安装到 AI Agent（Trae、Codex、ClaudeCode、OpenClaw、Hermes 等）的 Skill，Agent 可通过 CLI 直接搜索和获取图标，无需打开浏览器。
+图标选型工作台，聚合 28 个主流图标库，为项目选型图标用。同时是一个可安装到 AI Agent（Trae、Codex、ClaudeCode、OpenClaw、Hermes 等）的 Skill，Agent 可通过 CLI 直接搜索和获取图标，无需打开浏览器。
 
 > **English** | [中文](#中文说明)
 
-An icon selection workbench in a **single HTML file** — 19 major icon libraries aggregated for project icon picking. Also installable as an AI **Agent Skill** (Trae, Codex, ClaudeCode, OpenClaw, Hermes...): agents search and fetch icons via a zero-dependency Node.js CLI, no browser needed.
+An icon selection workbench with **zero build step** — 28 major icon libraries aggregated for project icon picking. Also installable as an AI **Agent Skill** (Trae, Codex, ClaudeCode, OpenClaw, Hermes...): agents search and fetch icons via a zero-dependency Node.js CLI, no browser needed.
 
 **Highlights**: Chinese/pinyin/synonym search · React/Vue component code · favorites with cross-library compare · shareable URL state · dark mode · lazy rendering of 30,000+ icons.
 
@@ -41,7 +41,7 @@ python3 -m http.server 8123
 # 打开 http://localhost:8123/index.html
 ```
 
-也可以把 `index.html` 部署到任意静态服务器，无任何构建依赖。
+也可以把仓库根目录直接部署到 GitHub Pages 或任意静态服务器，无任何构建依赖。`index.html` 使用相对路径加载 `css/style.css` 和 `js/app.js`，因此支持 GitHub Pages 的项目子路径。
 
 ## 界面预览
 
@@ -72,13 +72,22 @@ python3 -m http.server 8123
 | Flowbite Icons | 442 | Tailwind 生态，线条 / 实心 |
 | Devicons | 578 | 技术品牌 Logo（彩色） |
 | IconPark | 2658 | 字节跳动，多彩双色 |
+| Hugeicons | 6000+ | 新锐描边图标 |
+| Solar Icons | 1300+ × 6 风格 | 线条、双色、填充等风格 |
+| Carbon Icons | 2000+ | IBM Carbon 设计系统 |
+| Radix Icons | 300+ | 适合界面控件的小尺寸图标 |
+| Circle Flags | 700+ | 圆形国家和地区旗帜 |
+| Game Icons | 4000+ | 游戏题材图标 |
+| Simple Icons | 3700+ | 品牌 Logo |
+| CSS.gg | 700+ | CSS 图标集 |
+| Weather Icons | 200+ | 天气专用图标 |
 
 图标数据实时从各库官方 CDN 拉取，数量以页面显示为准，与官网同步。
 
 ## 功能
 
 - **中文搜索**：三级解析（980+ 条共享词典 → 拼音全拼/首字母 → MyMemory 免费翻译兜底），如「删除」「feiji」「fj」「挖掘机」均可命中
-- **跨库搜索**：搜索时当前图标库结果下方自动追加其他 18 个库的匹配分区（每库最多 12 个，后台渐进加载），点「查看全部」一键切换到该库看完整结果，选型不用逐库手动切
+- **跨库搜索**：搜索时当前图标库结果下方自动追加其他 27 个库的匹配分区（每库最多 12 个，后台渐进加载），点「查看全部」一键切换到该库看完整结果，选型不用逐库手动切
 - **英文语义搜索**：从词典反向构建同义词表（共现过滤），搜 `trash` 召回 delete / bin，搜 `user` 召回 person / shield
 - **评分排序**：图标名按词元切分（`-`/`_`/camelCase），精确命中 > 前缀 > tags > 子串；多概念组合查询（如「用户删除」）要求各概念同时命中（组间 AND、组内 OR），结果按相关性排序而非字母序
 - **收藏对比**：心形收藏（本地持久化）→ 右下角收藏栏 → 跨库横向对比弹窗，选型不用靠脑子记
@@ -86,6 +95,7 @@ python3 -m http.server 8123
 - **预览调节**：尺寸 16–96px、10 种颜色 + 自定义取色、描边 / 字重 / 填充样式；侧栏库列表独立滚动，预览设置常驻底部不遮挡
 - **点击图标**：大图预览 + 16/24/32/48/64 多尺寸对照，一键复制名称、CSS 类名、HTML 用法、React / Vue 组件代码、CDN 引入语句、SVG 源码
 - **深浅主题**：右上角切换，所有偏好（库 / 尺寸 / 颜色 / 风格）自动记忆
+- **像素加载动效**：加载时整片卡片网格共同组成心跳或小恐龙，数据就绪后立即切换为真实图标网格
 - **懒加载**：分块渲染，数千图标滚动流畅
 - **快捷键**：`/` 聚焦搜索，`Enter` 打开第一个结果，`Esc` 关闭弹窗
 
@@ -143,15 +153,21 @@ node skill/ig.js get "home" --lib lucide
 ```
 IconGallery/
 ├── AGENTS.md               # 通用 Agent Skill 定义
+├── css/
+│   └── style.css           # Web 界面样式
+├── js/
+│   ├── app.js              # Web 界面业务逻辑
+│   └── pixel-grid.js       # 像素加载图案与矩阵算法
 ├── skill/
 │   ├── ig.js               # CLI 核心脚本（纯 Node.js，零依赖）
 │   ├── SKILL.md            # 可移植 Skill 定义（相对路径）
 │   └── zh-index.json       # 共享中文词典（980+ 条，兼作英文同义词源）
-├── index.html              # Web 界面（单文件）
+├── index.html              # Web 页面结构与启动配置
 ├── screenshots/            # 截图
+├── tests/                  # Node.js 内置测试
 └── README.md               # 本文件
 ```
 
 ## 技术说明
 
-纯原生 HTML + CSS + JS，无构建、无依赖、单文件。图标列表解析各库官方 CDN 的 CSS / metadata / 文件树，SVG 类库（Lucide / Heroicons / Ionicons）按需内联渲染。仅供预览选型，图标版权归各库所有。
+纯原生 HTML + CSS + JS，无构建工具和包管理依赖。图标列表解析各库官方 CDN 的 CSS / metadata / 文件树，SVG 类库（Lucide / Heroicons / Ionicons）按需内联渲染。仅供预览选型，图标版权归各库所有。

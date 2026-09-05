@@ -4,7 +4,7 @@
 
 ## 核心能力
 
-通过 `ig` 命令行工具搜索、检索来自 19 个主流图标库的图标。支持中文、拼音、英文同义词（语义）搜索。
+通过 `ig` 命令行工具搜索、检索来自 28 个主流图标库的图标。支持中文、拼音、英文同义词（语义）搜索。
 
 ## 调用方法
 
@@ -88,6 +88,15 @@ node skill/ig.js get "home" --lib lucide
 | flowbite | Flowbite Icons |
 | devicons | Devicons |
 | iconpark | IconPark |
+| hugeicons | Hugeicons |
+| solar | Solar Icons |
+| carbon | Carbon Icons |
+| radix | Radix Icons |
+| flags | Circle Flags |
+| gameicons | Game Icons |
+| simpleicons | Simple Icons |
+| cssgg | CSS.gg |
+| weather | Weather Icons |
 
 ## 安装说明
 
