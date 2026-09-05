@@ -86,6 +86,65 @@ async function flatTree(pkg, ver) {
   return tree.files || [];
 }
 
+/* Iconify 全集 JSON 通用库构造：Hugeicons / Solar / Carbon / Radix / Circle Flags / Game Icons / Simple Icons
+   meta.styles 可选：风格后缀拆分（如 solar 的 -bold / -linear …），base 名为主列表，sets 记录每风格可用名 */
+function iconifyLib(prefix, meta) {
+  return {
+    name: meta.name,
+    site: meta.site,
+    css: '',
+    load: async () => {
+      const d = await fetchJson(`https://unpkg.com/@iconify/json@latest/json/${prefix}.json`);
+      const icons = d.icons || {};
+      const full = Object.keys(icons).sort();
+      if (!full.length) throw new Error('empty ' + prefix);
+      const bodies = {}, dims = {};
+      const dw = d.width || 24, dh = d.height || 24;
+      full.forEach((n) => {
+        bodies[n] = icons[n].body || '';
+        dims[n] = `${icons[n].width || dw}x${icons[n].height || dh}`;
+      });
+      const out = { names: full, bodies, dims, tags: {} };
+      if (meta.styles) {
+        const sets = {};
+        meta.styles.forEach((s) => { sets[s] = []; });
+        const bases = new Set();
+        full.forEach((n) => {
+          const s = meta.styles.find((x) => n.endsWith('-' + x));
+          if (s) {
+            sets[s].push(n.slice(0, -(s.length + 1)));
+            bases.add(n.slice(0, -(s.length + 1)));
+          }
+        });
+        meta.styles.forEach((s) => sets[s].sort());
+        out.names = [...bases].sort();
+        out.sets = sets;
+        out.defStyle = meta.defStyle || meta.styles[0];
+      }
+      return out;
+    },
+    svgOf: (name, data) => {
+      /* 带风格库：base 名解析为默认风格（缺失时取第一个可用风格） */
+      let full = name;
+      if (data.sets && !data.bodies[full]) {
+        full = `${name}-${data.defStyle}`;
+        if (!data.bodies[full]) {
+          const alt = Object.keys(data.sets).find((s) => data.bodies[`${name}-${s}`]);
+          full = alt ? `${name}-${alt}` : name;
+        }
+      }
+      const body = (data.bodies && data.bodies[full]) || '';
+      if (!body) return '';
+      const [w, h] = ((data.dims && data.dims[full]) || '24x24').split('x');
+      return `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 ${w} ${h}">${body}</svg>`;
+    },
+    react: (name) => {
+      const full = meta.styles ? `${name}-${meta.defStyle || meta.styles[0]}` : name;
+      return `import { Icon } from '@iconify/react';\n\n<Icon icon="${prefix}:${full}" width="24" />`;
+    },
+  };
+}
+
 /* ---------- Library definitions ---------- */
 const LIBS = {
   lucide: {
@@ -532,6 +591,49 @@ const LIBS = {
     },
     react: (name) => `import { ${pascal(name)} } from '@icon-park/react';\n\n<${pascal(name)} />`,
   },
+
+  /* Iconify 全集 JSON（SVG body 内嵌，单色为 currentColor） */
+  hugeicons: iconifyLib('hugeicons', { name: 'Hugeicons', site: 'https://hugeicons.com' }),
+  solar: iconifyLib('solar', {
+    name: 'Solar Icons',
+    site: 'https://icon-sets.iconify.design/solar/',
+    styles: ['bold-duotone', 'line-duotone', 'broken', 'linear', 'outline', 'bold'],
+    defStyle: 'linear',
+  }),
+  carbon: iconifyLib('carbon', { name: 'Carbon Icons', site: 'https://carbondesignsystem.com/guidelines/icons/library/' }),
+  radix: iconifyLib('radix-icons', { name: 'Radix Icons', site: 'https://www.radix-ui.com/icons' }),
+  flags: iconifyLib('circle-flags', { name: 'Circle Flags', site: 'https://github.com/HatScripts/circle-flags' }),
+  gameicons: iconifyLib('game-icons', { name: 'Game Icons', site: 'https://game-icons.net' }),
+  simpleicons: iconifyLib('simple-icons', { name: 'Simple Icons', site: 'https://simpleicons.org' }),
+
+  cssgg: {
+    name: 'CSS.gg',
+    site: 'https://css.gg',
+    css: 'https://cdn.jsdelivr.net/npm/css.gg@latest/icons/all.css',
+    load: async () => {
+      const css = await fetchText('https://cdn.jsdelivr.net/npm/css.gg@latest/icons/all.css');
+      const s = new Set();
+      for (const m of css.matchAll(/\.gg-([a-z0-9-]+)::?before/g)) s.add(m[1]);
+      return { names: [...s].sort(), tags: {} };
+    },
+    svgUrl: (name) => `https://cdn.jsdelivr.net/npm/css.gg@latest/icons/svg/${name}.svg`,
+    usage: (name) => `<i class="gg-${name}"></i>`,
+    react: (name) => `import { Icon } from '@iconify/react';\n\n<Icon icon="gg:${name}" width="24" />`,
+  },
+
+  weather: {
+    name: 'Weather Icons',
+    site: 'https://erikflowers.github.io/weather-icons/',
+    css: 'https://cdn.jsdelivr.net/npm/weather-icons@latest/css/weather-icons.min.css',
+    load: async () => {
+      const css = await fetchText('https://cdn.jsdelivr.net/npm/weather-icons@latest/css/weather-icons.min.css');
+      const s = new Set();
+      for (const m of css.matchAll(/\.wi-([a-z0-9-]+)::?before/g)) s.add(m[1]);
+      return { names: [...s].sort(), tags: {} };
+    },
+    usage: (name) => `<i class="wi wi-${name}"></i>`,
+    react: (name) => `import { Icon } from '@iconify/react';\n\n<Icon icon="wi:${name}" width="24" />`,
+  },
 };
 
 /* ---------- 组件代码模板（React/Vue，与 Web 端同逻辑） ---------- */
@@ -968,7 +1070,7 @@ async function similar(name, { lib: refLib, limit = 20, json: asJson } = {}) {
 
 /* ---------- CLI ---------- */
 function printUsage() {
-  console.log(`IconGallery CLI - 19 图标库搜索与检索
+  console.log(`IconGallery CLI - 28 图标库搜索与检索
 
 Usage:
   node ig.js list                    列出所有支持的图标库
