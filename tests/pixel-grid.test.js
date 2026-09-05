@@ -10,24 +10,38 @@ test('按真实卡片尺寸计算覆盖可视区的矩阵', () => {
   });
 });
 
-test('将图案居中映射到网格', () => {
-  assert.deepEqual(PixelGrid.mapFrame(['111', '010'], 5, 4), [6, 7, 8, 12]);
+test('波纹环覆盖全部卡片且互不重叠', () => {
+  const rings = PixelGrid.waveRings(5, 4, 4);
+  const all = rings.flat();
+
+  assert.equal(all.length, 20);
+  assert.equal(new Set(all).size, 20);
 });
 
-test('窄网格裁切后不产生越界索引', () => {
-  const indexes = PixelGrid.mapFrame(['11111', '11111'], 3, 1);
+test('第一环只包含距离中心最近的卡片', () => {
+  const rings = PixelGrid.waveRings(5, 4, 4);
 
-  assert.deepEqual(indexes, [0, 1, 2]);
+  assert.ok(rings[0].includes(7));
+  assert.ok(rings[0].includes(12));
 });
 
-test('内置心跳和小恐龙都有多个动画帧', () => {
-  assert.ok(PixelGrid.PATTERNS.heartbeat.length >= 2);
-  assert.ok(PixelGrid.PATTERNS.dinosaur.length >= 2);
+test('波纹从中心向外推进', () => {
+  const ring0 = PixelGrid.mapWave(5, 4, 0, 4);
+  const ring1 = PixelGrid.mapWave(5, 4, 1, 4);
+  const ring2 = PixelGrid.mapWave(5, 4, 2, 4);
+
+  assert.deepEqual(ring0, PixelGrid.waveRings(5, 4, 4)[0]);
+  assert.deepEqual(ring1, PixelGrid.waveRings(5, 4, 4)[1]);
+  assert.deepEqual(ring2, PixelGrid.waveRings(5, 4, 4)[2]);
 });
 
-test('随机选择只返回已定义图案', () => {
-  assert.equal(PixelGrid.pickPattern(() => 0), 'heartbeat');
-  assert.equal(PixelGrid.pickPattern(() => 0.999), 'dinosaur');
+test('波纹到达边缘后向中心收回（乒乓循环）', () => {
+  const rings = PixelGrid.waveRings(5, 4, 4);
+  const last = rings.length - 1;
+
+  assert.deepEqual(PixelGrid.mapWave(5, 4, last, 4), rings[last]);
+  assert.deepEqual(PixelGrid.mapWave(5, 4, last + 1, 4), rings[last - 1]);
+  assert.deepEqual(PixelGrid.mapWave(5, 4, last + 2, 4), rings[last - 2]);
 });
 
 test('每个网格位置只生成一个像素骨架卡片', () => {

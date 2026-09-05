@@ -5,84 +5,36 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function(){
   'use strict';
 
-  const PATTERNS = {
-    heartbeat: [
-      [
-        '01100110',
-        '11111111',
-        '11111111',
-        '01111110',
-        '00111100',
-        '00011000',
-      ],
-      [
-        '00000000',
-        '01100110',
-        '11111111',
-        '01111110',
-        '00111100',
-        '00011000',
-      ],
-      [
-        '01100110',
-        '11111111',
-        '11111111',
-        '01111110',
-        '00111100',
-        '00011000',
-      ],
-    ],
-    dinosaur: [
-      [
-        '000011110',
-        '000111011',
-        '110111110',
-        '111111000',
-        '011111000',
-        '001010000',
-        '001001000',
-      ],
-      [
-        '000011110',
-        '000111011',
-        '110111110',
-        '111111000',
-        '011111000',
-        '001010000',
-        '000101000',
-      ],
-    ],
-  };
-
   function measureGrid(width, height, cardWidth = 96, cardHeight = 76, gap = 10){
     const columns = Math.max(1, Math.floor((width + gap) / (cardWidth + gap)));
     const rows = Math.max(1, Math.ceil((height + gap) / (cardHeight + gap)));
     return { columns, rows, count: columns * rows };
   }
 
-  function mapFrame(frame, columns, rows){
-    const sourceRows = frame.length;
-    const sourceColumns = frame.reduce((max, line) => Math.max(max, line.length), 0);
-    const offsetX = Math.floor((columns - sourceColumns) / 2);
-    const offsetY = Math.floor((rows - sourceRows) / 2);
-    const indexes = [];
-
-    frame.forEach((line, sourceY) => {
-      [...line].forEach((pixel, sourceX) => {
-        const x = sourceX + offsetX;
-        const y = sourceY + offsetY;
-        if(pixel === '1' && x >= 0 && x < columns && y >= 0 && y < rows){
-          indexes.push(y * columns + x);
-        }
-      });
+  /* 按到网格中心的距离把所有卡片切成 ringCount 个同心环（内环在前），环互不重叠且覆盖全部卡片 */
+  function waveRings(columns, rows, ringCount = 5){
+    const cx = (columns - 1) / 2, cy = (rows - 1) / 2;
+    const cells = [];
+    for(let y = 0; y < rows; y++){
+      for(let x = 0; x < columns; x++){
+        cells.push({ index: y * columns + x, d: Math.hypot(x - cx, y - cy) });
+      }
+    }
+    cells.sort((a, b) => a.d - b.d);
+    const count = Math.max(1, Math.min(ringCount, cells.length));
+    const rings = Array.from({ length: count }, () => []);
+    cells.forEach((cell, i) => {
+      rings[Math.min(count - 1, Math.floor(i * count / cells.length))].push(cell.index);
     });
-
-    return indexes;
+    return rings;
   }
 
-  function pickPattern(random = Math.random){
-    const names = Object.keys(PATTERNS);
-    return names[Math.min(names.length - 1, Math.floor(random() * names.length))];
+  /* 心跳波纹：第 step 步点亮一环，从中心向外推到边缘，再向中心收回，乒乓循环 */
+  function mapWave(columns, rows, step, ringCount = 5){
+    const rings = waveRings(columns, rows, ringCount);
+    const cycle = rings.length > 1 ? rings.length * 2 - 2 : 1;
+    const s = ((step % cycle) + cycle) % cycle;
+    return rings[s < rings.length ? s : cycle - s];
   }
 
   function renderSkeleton(count, activeIndexes = new Set()){
@@ -91,5 +43,5 @@
     ).join('');
   }
 
-  return { PATTERNS, measureGrid, mapFrame, pickPattern, renderSkeleton };
+  return { measureGrid, waveRings, mapWave, renderSkeleton };
 });

@@ -37,10 +37,10 @@ html.dark{
 @keyframes cardIn{from{opacity:0;transform:translateY(4px)}to{opacity:1}}
 @keyframes pulse{50%{opacity:.05}}
 
-/* ---------- 加载：整片卡片网格作为像素画布 ---------- */
-.pixel-card{min-height:85px;cursor:default;pointer-events:none;animation:none;contain:paint;opacity:.42;transition:opacity .18s cubic-bezier(.25,1,.5,1),background-color .18s,border-color .18s}
-.pixel-card.is-active{background:rgba(99,102,241,.3);border-color:rgba(99,102,241,.6);opacity:1}
-html.dark .pixel-card.is-active{background:rgba(129,140,248,.28);border-color:rgba(129,140,248,.55)}
+/* ---------- 加载：整片卡片网格作为像素画布（心跳波纹） ---------- */
+.pixel-card{min-height:85px;cursor:default;pointer-events:none;animation:none;contain:paint;opacity:.4;transition:opacity .5s cubic-bezier(.22,1,.36,1),background-color .5s cubic-bezier(.22,1,.36,1),border-color .5s cubic-bezier(.22,1,.36,1)}
+.pixel-card.is-active{background:rgba(99,102,241,.38);border-color:rgba(99,102,241,.65);opacity:1;transition-duration:.12s}
+html.dark .pixel-card.is-active{background:rgba(129,140,248,.34);border-color:rgba(129,140,248,.6)}
 
 /* ---------- 搜索：其他图标库结果 ---------- */
 .ol-caption{display:flex;align-items:center;gap:10px;margin:36px 0 4px;font-size:12px;font-weight:500;color:var(--label);white-space:nowrap}

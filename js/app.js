@@ -1069,14 +1069,22 @@ cmpModal.addEventListener('click', e => {
 
 /* ================= 渲染管线 ================= */
 let gen = 0, rendered = 0;
-let pixelTimer = null, pixelResizeTimer = null, pixelPattern = null, pixelFrame = 0;
+let pixelTimer = null, pixelResizeTimer = null, pixelStartTimer = null, pixelRevealTimer = null;
+let pixelRingCount = 5, pixelFrame = 0, pixelShownAt = 0;
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+const PIXEL_INTERVAL = 120;      /* 波纹推进节奏：每环点亮间隔 */
+const PIXEL_START_DELAY = 300;   /* 加载超过该时长才出现心跳骨架 */
+const PIXEL_MIN_CYCLES = 2;      /* 心跳出现后至少完整跳完的轮数 */
 
 function stopPixelLoading(){
   clearInterval(pixelTimer);
   clearTimeout(pixelResizeTimer);
+  clearTimeout(pixelStartTimer);
+  clearTimeout(pixelRevealTimer);
   pixelTimer = null;
   pixelResizeTimer = null;
+  pixelStartTimer = null;
+  pixelRevealTimer = null;
 }
 function pixelGridMetrics(){
   const style = getComputedStyle(grid);
@@ -1086,28 +1094,26 @@ function pixelGridMetrics(){
   return PixelGrid.measureGrid(width, height, 96, 85, 10);
 }
 function paintPixelFrame(generation){
-  if(generation !== gen || !pixelPattern) return;
+  if(generation !== gen) return;
   const cards = [...grid.querySelectorAll('.pixel-card')];
   if(!cards.length) return;
   const metrics = pixelGridMetrics();
-  const frames = PixelGrid.PATTERNS[pixelPattern];
-  const active = new Set(PixelGrid.mapFrame(frames[pixelFrame % frames.length], metrics.columns, metrics.rows));
+  const active = new Set(PixelGrid.mapWave(metrics.columns, metrics.rows, pixelFrame, pixelRingCount));
   cards.forEach((card, index) => card.classList.toggle('is-active', active.has(index)));
   pixelFrame++;
 }
 function startPixelLoading(generation){
   stopPixelLoading();
-  pixelPattern = PixelGrid.pickPattern();
   pixelFrame = 0;
   hidePanel();
   grid.setAttribute('aria-busy', 'true');
   grid.setAttribute('aria-label', '正在加载图标库');
   const metrics = pixelGridMetrics();
-  const firstFrame = PixelGrid.PATTERNS[pixelPattern][0];
-  grid.innerHTML = PixelGrid.renderSkeleton(metrics.count, new Set(PixelGrid.mapFrame(firstFrame, metrics.columns, metrics.rows)));
+  pixelRingCount = Math.max(3, Math.min(7, Math.round(Math.min(metrics.columns, metrics.rows) / 2)));
+  grid.innerHTML = PixelGrid.renderSkeleton(metrics.count, new Set(PixelGrid.mapWave(metrics.columns, metrics.rows, 0, pixelRingCount)));
   sentinel.classList.add('ig-hide');
   endNote.classList.add('ig-hide');
-  if(!reduceMotion.matches) pixelTimer = setInterval(() => paintPixelFrame(generation), 280);
+  if(!reduceMotion.matches) pixelTimer = setInterval(() => paintPixelFrame(generation), 160);
 }
 function clearPixelLoading(){
   stopPixelLoading();
